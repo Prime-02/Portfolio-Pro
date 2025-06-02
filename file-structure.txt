@@ -1,0 +1,67 @@
+project_root/
+├── .env                    # Environment variables
+├── .gitignore
+├── README.md
+├── requirements.txt        # Or pyproject.toml/poetry.lock
+├── docker-compose.yml      # Optional for containerization
+├── Dockerfile              # Optional
+│
+├── app/                    # Main application package
+│   ├── __init__.py
+│   ├── main.py             # FastAPI app initialization
+│   ├── config.py           # Configuration settings
+│   ├── dependencies.py     # Shared dependencies
+│   │
+│   ├── core/               # Core application logic
+│   │   ├── __init__.py
+│   │   ├── security.py     # Authentication, JWT, etc.
+│   │   ├── exceptions.py   # Custom exceptions
+│   │   └── middleware.py   # Custom middleware
+│   │
+│   ├── models/             # Database models/schemas
+│   │   ├── __init__.py
+│   │   ├── base.py         # Base model if using SQLAlchemy
+│   │   ├── schemas.py      # Pydantic schemas
+│   │   └── db_models.py    # Database models (SQLAlchemy, etc.)
+│   │
+│   ├── api/                # API endpoints organized by version
+│   │   ├── __init__.py
+│   │   ├── v1/             # API version 1
+│   │   │   ├── __init__.py
+│   │   │   ├── endpoints/  # Route handlers
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── users.py
+│   │   │   │   ├── items.py
+│   │   │   │   └── ...
+│   │   │   └── routers.py  # Aggregates all routers
+│   │   └── v2/             # Future API version
+│   │
+│   ├── services/           # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── auth_service.py
+│   │   ├── user_service.py
+│   │   └── ...
+│   │
+│   ├── repositories/       # Data access layer (if using)
+│   │   ├── __init__.py
+│   │   ├── user_repository.py
+│   │   └── ...
+│   │
+│   ├── utils/              # Utility functions
+│   │   ├── __init__.py
+│   │   ├── logging.py
+│   │   └── ...
+│   │
+│   └── tests/              # Tests
+│       ├── __init__.py
+│       ├── conftest.py     # Pytest fixtures
+│       ├── unit/
+│       ├── integration/
+│       └── e2e/
+│
+├── migrations/             # Database migrations (Alembic)
+│   └── ...
+│
+└── scripts/                # Utility scripts
+    ├── prestart.sh         # Pre-startup scripts
+    └── ...
