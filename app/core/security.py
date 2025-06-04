@@ -12,7 +12,7 @@ from sqlalchemy.sql.expression import and_
 from sqlalchemy import or_
 from app.config import settings
 from app.dependencies import get_db
-from app.models.db_models import User as DBUser, UserSettings
+from app.models.db_models import  UserSettings
 from sqlalchemy import cast, Boolean
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
@@ -20,7 +20,7 @@ from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
-from app.models.schemas import User as DBUser
+from app.models.schemas import DBUser
 from pydantic import BaseModel
 
 

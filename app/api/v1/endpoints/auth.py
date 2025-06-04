@@ -4,10 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_
 from uuid import UUID
-from app.models.schemas import User, UserCreate
 from app.database import get_db
 from app.core import get_password_hash
-from app.models.schemas import User as DBUser
+from app.models.schemas import DBUser, UserCreate
 from app.core.security import get_current_user
 from sqlalchemy import cast, Boolean
 from typing import Annotated, Dict, Any
@@ -20,11 +19,15 @@ from uuid import UUID
 from datetime import timedelta
 
 
-
-from app.core.security import authenticate_user, create_access_token, TokenData, get_expiration_timestamp
+from app.core.security import (
+    authenticate_user,
+    create_access_token,
+    TokenData,
+    get_expiration_timestamp,
+)
 from app.config import settings
 from app.database import get_db
-from app.models.schemas import User as DBUser
+from app.models.schemas import DBUser
 from sqlalchemy import cast, Boolean
 
 
@@ -97,15 +100,12 @@ async def login_for_access_token(
     access_token_expires = timedelta(minutes=30)
     exp_timestamp = get_expiration_timestamp(access_token_expires)
 
-
     token_data = TokenData(
         sub=user.username,
         exp=exp_timestamp,
     )
 
-    access_token: str = create_access_token(
-        data=token_data.model_dump()
-    )
+    access_token: str = create_access_token(data=token_data.model_dump())
 
     return TokenResponse(
         access_token=access_token,
@@ -118,8 +118,8 @@ async def login_for_access_token(
     )
 
 
-@router.post("/signup", response_model=User, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
+@router.post("/signup", response_model=DBUser, status_code=status.HTTP_201_CREATED)
+async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> DBUser:
     """
     Create a new user account with hashed password.
     Default role is 'user' and is_active is True.
@@ -140,12 +140,14 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> U
         )
 
     # Create new user with hashed password
+    hashed_password = get_password_hash(user.password)
+
     db_user = DBUser(
         email=user.email,
         username=user.username,
-        hashed_password=get_password_hash(user.password),
-        is_active=True,
-        role="user",  # Default role
+        hashed_password=hashed_password,  # Convert plain pw to hash
+        is_active=True,  # Default value
+        role="user",  # Default value
     )
 
     db.add(db_user)
@@ -155,12 +157,12 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> U
     return db_user
 
 
-@router.get("/{user_id}/user-data", response_model=User)
+@router.get("/{user_id}/user-data", response_model=DBUser)
 async def read_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> User:
+) -> DBUser:
     """
     Get user details by ID (requires authentication).
     Users can only access their own data unless they're admin.
@@ -181,12 +183,12 @@ async def read_user(
     return user
 
 
-@router.patch("/{user_id}/deactivate", response_model=User)
+@router.patch("/{user_id}/deactivate", response_model=DBUser)
 async def deactivate_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: DBUser = Depends(get_current_user),
-) -> User:
+) -> DBUser:
     """
     Deactivate a user account (admin only)
     """

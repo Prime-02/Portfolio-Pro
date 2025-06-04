@@ -7,7 +7,6 @@ class UserBase(BaseModel):
     id: UUID | None = None  # Optional UUID for user ID
     email: EmailStr
     username: str
-    hashed_password: str
 
 
 class UserCreate(UserBase):
@@ -28,10 +27,11 @@ class UserSettings(UserSettingsBase):
         from_attributes = True
 
 
-class User(UserBase):
+class DBUser(UserBase):
     is_active: bool
     role: str | None = None
     settings: Optional[UserSettings] = None  # Optional relationship to UserSettings
+    hashed_password: str  # 
 
     class Config:
         from_attributes = True  # For Pydantic v2 (was `orm_mode` in v1)

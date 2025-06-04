@@ -18,6 +18,11 @@ def create_application() -> FastAPI:
     @app.get("/")
     async def root():
         return {"yoo": "Hello World"}
+    
+    # Temporarily add this to your main.py
+    @app.get("/routes")
+    def list_routes():
+        return [{"path": route.path, "name": route.name} for route in app.routes]
 
     return app
 

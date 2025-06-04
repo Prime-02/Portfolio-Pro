@@ -5,10 +5,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional
 from sqlalchemy.orm import relationship
 
+
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {'schema': 'portfolio_pro_app'}
-    
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
@@ -16,15 +17,21 @@ class User(Base):
     role = Column(String, default="user")
     hashed_password = Column(String)
     settings = relationship(
-        "UserSettings", 
-        back_populates="user", 
+        "UserSettings",
+        back_populates="user",
         cascade="all, delete-orphan",
-        uselist=False
+        uselist=False,
     )
 
-    def __init__(self, email: str, username: str, hashed_password: str,
-                 is_active: bool = True, role: str = "user",
-                 id: Optional[uuid.UUID] = None):
+    def __init__(
+        self,
+        email: str,
+        username: str,
+        hashed_password: str,
+        is_active: bool = True,
+        role: str = "user",
+        id: Optional[uuid.UUID] = None,
+    ):
         self.email = email
         self.username = username
         self.hashed_password = hashed_password
@@ -35,10 +42,11 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"
 
+
 class UserSettings(Base):
     __tablename__ = "user_settings"
-    __table_args__ = {'schema': 'portfolio_pro_app'}
-    
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     language = Column(String, index=True)
     theme = Column(String)
