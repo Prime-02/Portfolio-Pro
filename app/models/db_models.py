@@ -22,10 +22,10 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True)
+    username = Column(String, unique=True, index=True)
     firstname = Column(String, index=True, nullable=True)
     middlename = Column(String, index=True, nullable=True)
     lastname = Column(String, index=True, nullable=True)
-    username = Column(String, unique=True, index=True)
     profile_picture = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     is_active = Column(Boolean, default=False)
@@ -55,10 +55,10 @@ class User(Base):
         self,
         email: str,
         username: str,
-        firstname: str,
-        middlename: str,
-        lastname: str,
         hashed_password: str,
+        firstname: str = "",
+        middlename: str = "",
+        lastname: str = "",
         is_active: bool = True,
         role: str = "user",
         id: Optional[uuid.UUID] = None,
@@ -86,7 +86,9 @@ class UserSettings(Base):
     theme = Column(String, default="custom")  # 'light', 'dark', 'custom'
     primary_theme = Column(String, default="#000000")
     secondary_theme = Column(String, default="#FFFFFF")
-    layout_style = Column(String, default="modern")  # 'modern', 'creative', 'minimalist'
+    layout_style = Column(
+        String, default="modern"
+    )  # 'modern', 'creative', 'minimalist'
     owner_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     user = relationship("User", back_populates="settings")
 
@@ -251,23 +253,6 @@ class CustomSectionItem(Base):
     section = relationship("CustomSection", back_populates="items")
 
 
-class Testimonial(Base):
-    __tablename__ = "testimonials"
-    __table_args__ = {"schema": "portfolio_pro_app"}
-
-    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
-    author_name = Column(String, nullable=False)
-    author_title = Column(String, nullable=True)
-    author_company = Column(String, nullable=True)
-    relationship = Column(String, nullable=True)  # "Colleague", "Manager", "Client"
-    content = Column(String, nullable=False)
-    rating = Column(Integer, nullable=True)  # 1-5 scale
-    is_approved = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    user = relationship("User", back_populates="testimonials")
-
-
 class Education(Base):
     __tablename__ = "education"
     __table_args__ = {"schema": "portfolio_pro_app"}
@@ -300,3 +285,23 @@ class ContentBlock(Base):
     is_visible = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="content_blocks")
+
+
+class Testimonial(Base):
+    __tablename__ = "testimonials"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    author_name = Column(String, nullable=False)
+    author_title = Column(String, nullable=True)
+    author_company = Column(String, nullable=True)
+    author_relationship = Column(
+        String, nullable=True
+    )  # "Colleague", "Manager", "Client"
+    content = Column(String, nullable=False)
+    rating = Column(Integer, nullable=True)  # 1-5 scale
+    is_approved = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="testimonials")

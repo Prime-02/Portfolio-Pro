@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
     GMAIL_REFRESH_TOKEN: str
     MAIL_DEFAULT_SENDER: str
+    ENVIRONMENT: str = "development"  # Default to development
 
     class Config:
         env_file = ".env"

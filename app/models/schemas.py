@@ -41,6 +41,33 @@ class UserWithSettings(DBUser, UserSettingsBase):
 
 
 class UserUpdateRequest(BaseModel):
-    email: Optional[str] = None
     username: Optional[str] = None
+    firstname: Optional[str] = None
+    middlename: Optional[str] = None
+    lastname: Optional[str] = None
+    profile_picture: Optional[str] = None
+    phone_number: Optional[str] = None
     is_active: Optional[bool] = None
+    role: Optional[str] = None
+
+
+class UserProfileRequest(BaseModel):
+    github_username: Optional[str] = None
+    bio : Optional[str] = None
+    profession: Optional[str] = None
+    job_title: Optional[str] = None
+    years_of_experience: Optional[int] = None
+    website_url: Optional[str] = None
+    location: Optional[str] = None
+    open_to_work: Optional[bool] = None
+    availability: Optional[str] = None
+    profile_picture: Optional[str] = None
+
+
+class UserSettingsUpdateRequest(BaseModel):
+    language: Optional[str] = None
+    theme: Optional[str] = None
+    primary_theme: Optional[str] = None
+    secondary_theme: Optional[str] = None
+    layout_style: Optional[str] = None
+

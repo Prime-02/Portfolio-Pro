@@ -205,10 +205,19 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
     await db.flush()
 
     db_settings = UserSettings(
-        language="en", theme="light", primary_theme="#000000", owner_id=db_user.id
+        language="en",
+        theme="light",
+        primary_theme="#000000",
+        owner_id=db_user.id,
+        secondary_theme="#ffffff",
+        layout_style="default",
     )
     db.add(db_settings)
-
     await db.commit()
     await db.refresh(db_user)
+    send_email(
+        to=str(user.email),
+        subject=f"We are happy to have you on board, {user.username}!",
+        body=f"Welcome to Portfolio Pro, Your account has been created successfully. You can now log in and start using our services.",
+    )
     return DBUser.model_validate(db_user)
