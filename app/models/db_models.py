@@ -7,6 +7,7 @@ from sqlalchemy import (
     Date,
     Text,
     Boolean,
+    Index,
 )
 from sqlalchemy.sql import func
 from .base import Base
@@ -14,6 +15,7 @@ import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional
 from sqlalchemy.orm import relationship, Mapped
+from sqlalchemy.ext.associationproxy import association_proxy
 
 
 class User(Base):
@@ -44,13 +46,20 @@ class User(Base):
     skills = relationship("ProfessionalSkills", back_populates="user")
     social_links = relationship("SocialLinks", back_populates="user")
     certifications = relationship("Certification", back_populates="user")
-    projects = relationship("PortfolioProject", back_populates="user")
+    projects = association_proxy("project_associations", "project")
     media_items = relationship("MediaGallery", back_populates="user")
     custom_sections = relationship("CustomSection", back_populates="user")
     testimonials = relationship("Testimonial", back_populates="user")
     education = relationship("Education", back_populates="user")
     content_blocks = relationship("ContentBlock", back_populates="user")
-    devices = relationship("UserDevices", back_populates="user", cascade="all, delete-orphan")
+    devices = relationship(
+        "UserDevices", back_populates="user", cascade="all, delete-orphan"
+    )
+    project_associations = relationship(
+        "UserProjectAssociation",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __init__(
         self,
@@ -192,8 +201,12 @@ class PortfolioProject(Base):
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-
-    user = relationship("User", back_populates="projects")
+    user_associations = relationship(
+        "UserProjectAssociation",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    users = association_proxy("user_associations", "user")
 
     def __repr__(self):
         return f"<PortfolioProject(id={self.id}, user_id={self.user_id}, project_name={self.project_name})>"
@@ -322,3 +335,26 @@ class UserDevices(Base):
 
     def __repr__(self):
         return f"<UserDevices(id={self.id}, user_id={self.user_id}, device_name={self.device_name})>"
+
+
+class UserProjectAssociation(Base):
+    __tablename__ = "user_project_association"
+    __table_args__ = (
+        {"schema": "portfolio_pro_app"},
+        Index("idx_user_project_user_id", "user_id"),
+        Index("idx_user_project_project_id", "project_id"),
+    )
+
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"), primary_key=True
+    )
+    project_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("portfolio_pro_app.portfolio_projects.id"),
+        primary_key=True,
+    )
+    role = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="project_associations")
+    project = relationship("PortfolioProject", back_populates="user_associations")
