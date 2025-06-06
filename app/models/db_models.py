@@ -1,9 +1,19 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Date,
+    Text,
+    Boolean,
+)
+from sqlalchemy.sql import func
 from .base import Base
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 
 
 class User(Base):
@@ -12,21 +22,42 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True)
+    firstname = Column(String, index=True, nullable=True)
+    middlename = Column(String, index=True, nullable=True)
+    lastname = Column(String, index=True, nullable=True)
     username = Column(String, unique=True, index=True)
-    is_active = Column(Integer, default=0)
+    profile_picture = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    is_active = Column(Boolean, default=False)
     role = Column(String, default="user")
     hashed_password = Column(String)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     settings = relationship(
         "UserSettings",
         back_populates="user",
         cascade="all, delete-orphan",
         uselist=False,
     )
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
+    skills = relationship("ProfessionalSkills", back_populates="user")
+    social_links = relationship("SocialLinks", back_populates="user")
+    certifications = relationship("Certification", back_populates="user")
+    projects = relationship("PortfolioProject", back_populates="user")
+    media_items = relationship("MediaGallery", back_populates="user")
+    custom_sections = relationship("CustomSection", back_populates="user")
+    testimonials = relationship("Testimonial", back_populates="user")
+    education = relationship("Education", back_populates="user")
+    content_blocks = relationship("ContentBlock", back_populates="user")
 
     def __init__(
         self,
         email: str,
         username: str,
+        firstname: str,
+        middlename: str,
+        lastname: str,
         hashed_password: str,
         is_active: bool = True,
         role: str = "user",
@@ -34,6 +65,9 @@ class User(Base):
     ):
         self.email = email
         self.username = username
+        self.firstname = firstname
+        self.middlename = middlename
+        self.lastname = lastname
         self.hashed_password = hashed_password
         self.is_active = is_active
         self.role = role
@@ -49,10 +83,220 @@ class UserSettings(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     language = Column(String, index=True, default="en")
-    theme = Column(String, default="light")
+    theme = Column(String, default="custom")  # 'light', 'dark', 'custom'
     primary_theme = Column(String, default="#000000")
+    secondary_theme = Column(String, default="#FFFFFF")
+    layout_style = Column(String, default="modern")  # 'modern', 'creative', 'minimalist'
     owner_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     user = relationship("User", back_populates="settings")
 
     def __repr__(self):
         return f"<UserSettings(id={self.id}, owner_id={self.owner_id})>"
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profile"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    github_username = Column(String, nullable=True)
+    bio = Column(String, nullable=True)
+    profession = Column(String, nullable=True)
+    job_title = Column(String, nullable=True)
+    years_of_experience = Column(Integer, nullable=True)
+    website_url = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    open_to_work = Column(Boolean, default=False)
+    availability = Column(String, nullable=True)
+    profile_picture = Column(String, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    user = relationship("User", back_populates="profile")
+
+    def __repr__(self):
+        return f"<UserProfile(id={self.id}, user_id={self.user_id})>"
+
+
+class ProfessionalSkills(Base):
+    __tablename__ = "professional_skills"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    skill_name = Column(String, nullable=False)
+    proficiency_level = Column(
+        String, nullable=False
+    )  # e.g., Beginner, Intermediate, Expert
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    user = relationship("User", back_populates="skills")
+
+    def __repr__(self):
+        return f"<ProfessionalSkills(id={self.id}, user_id={self.user_id}, skill_name={self.skill_name})>"
+
+
+class SocialLinks(Base):
+    __tablename__ = "social_links"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    platform_name = Column(String, nullable=False)  # e.g., LinkedIn, GitHub
+    profile_url = Column(String, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    user = relationship("User", back_populates="social_links")
+
+    def __repr__(self):
+        return f"<SocialLinks(id={self.id}, user_id={self.user_id}, platform_name={self.platform_name})>"
+
+
+class Certification(Base):
+    __tablename__ = "certifications"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    certification_name = Column(String, nullable=False)
+    issuing_organization = Column(String, nullable=False)
+    issue_date = Column(DateTime(timezone=True), nullable=True)
+    expiration_date = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    user = relationship("User", back_populates="certifications")
+
+
+class PortfolioProject(Base):
+    __tablename__ = "portfolio_projects"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    project_name = Column(String, nullable=False)
+    project_description = Column(String, nullable=False)
+    project_url = Column(String, nullable=True)  # URL to the project or repository
+    project_image_url = Column(
+        String, nullable=True
+    )  # URL to the project or repository
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    user = relationship("User", back_populates="projects")
+
+    def __repr__(self):
+        return f"<PortfolioProject(id={self.id}, user_id={self.user_id}, project_name={self.project_name})>"
+
+
+class MediaGallery(Base):
+    __tablename__ = "media_gallery"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    media_type = Column(String, nullable=False)  # 'image', 'video', 'document', 'audio'
+    url = Column(String, nullable=False)
+    title = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    is_featured = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="media_items")
+
+
+class CustomSection(Base):
+    __tablename__ = "custom_sections"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    section_type = Column(
+        String, nullable=False
+    )  # 'timeline', 'gallery', 'testimonials', 'publications'
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    position = Column(Integer, nullable=False)
+    is_visible = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="custom_sections")
+    items = relationship("CustomSectionItem", back_populates="section")
+
+
+class CustomSectionItem(Base):
+    __tablename__ = "custom_section_items"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    section_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.custom_sections.id")
+    )
+    title = Column(String, nullable=False)
+    subtitle = Column(
+        String, nullable=True
+    )  # e.g., company for experience, degree for education
+    description = Column(String, nullable=True)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    is_current = Column(Boolean, default=False)
+    media_url = Column(String, nullable=True)
+
+    section = relationship("CustomSection", back_populates="items")
+
+
+class Testimonial(Base):
+    __tablename__ = "testimonials"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    author_name = Column(String, nullable=False)
+    author_title = Column(String, nullable=True)
+    author_company = Column(String, nullable=True)
+    relationship = Column(String, nullable=True)  # "Colleague", "Manager", "Client"
+    content = Column(String, nullable=False)
+    rating = Column(Integer, nullable=True)  # 1-5 scale
+    is_approved = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user = relationship("User", back_populates="testimonials")
+
+
+class Education(Base):
+    __tablename__ = "education"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    institution = Column(String, nullable=False)
+    degree = Column(String, nullable=False)
+    field_of_study = Column(String, nullable=True)
+    start_year = Column(Integer, nullable=True)
+    end_year = Column(Integer, nullable=True)
+    is_current = Column(Boolean, default=False)
+    description = Column(String, nullable=True)
+
+    user = relationship("User", back_populates="education")
+
+
+class ContentBlock(Base):
+    __tablename__ = "content_blocks"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    block_type = Column(
+        String, nullable=False
+    )  # 'about', 'services', 'process', 'fun_facts'
+    title = Column(String, nullable=True)
+    content = Column(Text, nullable=False)
+    position = Column(Integer, nullable=False)
+    is_visible = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="content_blocks")
