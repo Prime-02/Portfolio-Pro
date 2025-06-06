@@ -207,6 +207,12 @@ class PortfolioProject(Base):
         cascade="all, delete-orphan",
     )
     users = association_proxy("user_associations", "user")
+    likes = relationship(
+        "ProjectLike", back_populates="project", cascade="all, delete-orphan"
+    )
+    comments = relationship(
+        "ProjectComment", back_populates="project", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<PortfolioProject(id={self.id}, user_id={self.user_id}, project_name={self.project_name})>"
@@ -339,12 +345,8 @@ class UserDevices(Base):
 
 class UserProjectAssociation(Base):
     __tablename__ = "user_project_association"
-    __table_args__ = (
-        {"schema": "portfolio_pro_app"},
-        Index("idx_user_project_user_id", "user_id"),
-        Index("idx_user_project_project_id", "project_id"),
-    )
 
+    # Define columns FIRST
     user_id = Column(
         UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"), primary_key=True
     )
@@ -356,5 +358,68 @@ class UserProjectAssociation(Base):
     role = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # THEN define table args
+    __tablename__ = "user_project_association"
+    __table_args__ = {
+        "schema": "portfolio_pro_app",
+        # Indexes must be defined separately, not in the dict
+    }
+
+    # Define indexes AFTER the table args
+    Index("idx_user_project_user_id", "user_id")
+    Index("idx_user_project_project_id", "project_id")
+
+    # Relationships (make sure these models are imported correctly)
     user = relationship("User", back_populates="project_associations")
     project = relationship("PortfolioProject", back_populates="user_associations")
+
+
+class ProjectLike(Base):
+    __tablename__ = "project_likes"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.portfolio_projects.id")
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
+    )  # Who liked it
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    project = relationship("PortfolioProject", back_populates="likes")
+    user = relationship("User")
+
+
+class ProjectComment(Base):
+    __tablename__ = "project_comments"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.portfolio_projects.id")
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
+    )  # Author
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    parent_comment_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("portfolio_pro_app.project_comments.id"),
+        nullable=True,
+    )  # For replies
+
+    # Relationships
+    project = relationship("PortfolioProject", back_populates="comments")
+
+    user = relationship("User")
+
+    replies = relationship(
+        "ProjectComment", back_populates="parent_comment", remote_side=[id]
+    )
+
+    parent_comment = relationship(
+        "ProjectComment", back_populates="replies", remote_side=[parent_comment_id]
+    )
