@@ -8,16 +8,18 @@ venv/
 env/
 .venv/
 
-# Environment files
-.env
-.env.local
-.env*.local
+# # Environment files
+# .env
+# .env.local
+# .env*.local
 
-# IDE & Editor files
-.vscode/
-.idea/
+# # IDE & Editor files
+# .vscode/
+# .idea/
 
-# Build & distribution files
-dist/
-build/
-*.egg-info/
+# # Build & distribution files
+# dist/
+# build/
+# *.egg-info/
+
+# alembic*
