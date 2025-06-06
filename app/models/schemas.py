@@ -1,5 +1,7 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
+from datetime import datetime
+import uuid
 
 
 class UserBase(BaseModel):
@@ -52,8 +54,9 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserProfileRequest(BaseModel):
+    user_id: Optional[uuid.UUID] = None
     github_username: Optional[str] = None
-    bio : Optional[str] = None
+    bio: Optional[str] = None
     profession: Optional[str] = None
     job_title: Optional[str] = None
     years_of_experience: Optional[int] = None
@@ -62,6 +65,7 @@ class UserProfileRequest(BaseModel):
     open_to_work: Optional[bool] = None
     availability: Optional[str] = None
     profile_picture: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)  # For Pydantic v2
 
 
 class UserSettingsUpdateRequest(BaseModel):
@@ -71,3 +75,9 @@ class UserSettingsUpdateRequest(BaseModel):
     secondary_theme: Optional[str] = None
     layout_style: Optional[str] = None
 
+
+class UserDevicesRequest(BaseModel):
+    device_name: Optional[str] = None
+    device_type: Optional[str] = None  # e.g., 'mobile', 'desktop', 'tablet'
+    last_used: Optional[datetime] = None  # ISO format date string
+    user_id: Optional[uuid.UUID] = None  # User ID to associate with the device

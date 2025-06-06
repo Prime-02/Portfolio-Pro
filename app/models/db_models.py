@@ -50,6 +50,7 @@ class User(Base):
     testimonials = relationship("Testimonial", back_populates="user")
     education = relationship("Education", back_populates="user")
     content_blocks = relationship("ContentBlock", back_populates="user")
+    devices = relationship("UserDevices", back_populates="user", cascade="all, delete-orphan")
 
     def __init__(
         self,
@@ -305,3 +306,19 @@ class Testimonial(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="testimonials")
+
+
+class UserDevices(Base):
+    __tablename__ = "user_devices"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    device_name = Column(String, nullable=False)
+    device_type = Column(String, nullable=False)  # e.g., 'mobile', 'desktop', 'tablet'
+    last_used = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="devices")
+
+    def __repr__(self):
+        return f"<UserDevices(id={self.id}, user_id={self.user_id}, device_name={self.device_name})>"

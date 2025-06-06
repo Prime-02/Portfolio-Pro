@@ -5,16 +5,21 @@ from sqlalchemy.future import select
 from sqlalchemy import or_
 from app.database import get_db
 from app.core import get_password_hash
-from app.models.schemas import DBUser, UserCreate
+from app.models.schemas import DBUser, UserCreate, UserDevicesRequest
 from sqlalchemy import cast, Boolean
-from typing import Annotated, Dict, Any
+from typing import Annotated, Dict, Any, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from pydantic import BaseModel, EmailStr
-from app.core.security import generate_password_reset_token, verify_token
+from app.core.security import (
+    generate_password_reset_token,
+    verify_token,
+    get_current_user,
+    validate_username,
+)
 from datetime import timedelta
-from app.models.db_models import User, UserSettings
+from app.models.db_models import User, UserSettings, UserDevices
 from app.services.gmail_utils import send_email
 
 
@@ -54,6 +59,10 @@ class ForgottenPasswordRequest(BaseModel):
 class PasswordResetRequest(BaseModel):
     token: str
     new_password: str
+
+
+class DBUserId(DBUser):
+    id: Optional[int] = None
 
 
 @router.post("/forgotten-password", status_code=status.HTTP_200_OK)
@@ -153,7 +162,7 @@ async def login_for_access_token(
         )
 
     # Token generation - fix the duplicate assignment
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(days=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     exp_timestamp = get_expiration_timestamp(access_token_expires)
 
     token_data = TokenData(
@@ -192,6 +201,11 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email or username already registered",
         )
+    if not validate_username(user.username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username must be between 3 and 30 characters, must start with alphanumeric characters, no consecutive special characters (__ or -- or .. etc.), can only contain letters, numbers, underscores, periods and hyphens, ensure it doesnt have special words like 'admin', 'root', 'user', 'test', 'guest' etc.",
+        )
 
     # 2. Create new user
     db_user = User(
@@ -221,3 +235,47 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
         body=f"Welcome to Portfolio Pro, Your account has been created successfully. You can now log in and start using our services.",
     )
     return DBUser.model_validate(db_user)
+
+
+@router.post(
+    "/register-device",
+    status_code=status.HTTP_200_OK,
+    response_model=UserDevicesRequest,
+)
+async def register_device(
+    device: UserDevicesRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: DBUserId = Depends(get_current_user),
+) -> UserDevicesRequest:
+    # Check if the device already exists for this user
+    existing_device_result = await db.execute(
+        select(UserDevices).where(
+            UserDevices.device_name == device.device_name,
+            UserDevices.user_id == current_user.id,
+        )
+    )
+    existing_device = existing_device_result.scalar_one_or_none()
+
+    if existing_device:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Device already registered for this user",
+        )
+
+    # Create new device
+    new_device = UserDevices(
+        device_name=device.device_name,
+        device_type=device.device_type,
+        user_id=current_user.id,
+        # Add any other device attributes here
+    )
+
+    db.add(new_device)
+    await db.commit()
+    await db.refresh(new_device)
+    send_email(
+        to=str(current_user.email),
+        subject=f"Device Registered Successfully",
+        body=f"A new device '{device.device_name}'was used to access your account.",
+    )
+    return new_device
