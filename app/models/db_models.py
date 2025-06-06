@@ -48,9 +48,9 @@ class UserSettings(Base):
     __table_args__ = {"schema": "portfolio_pro_app"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    language = Column(String, index=True)
-    theme = Column(String)
-    primaryTheme = Column(String)
+    language = Column(String, index=True, default="en")
+    theme = Column(String, default="light")
+    primary_theme = Column(String, default="#000000")
     owner_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     user = relationship("User", back_populates="settings")
 
