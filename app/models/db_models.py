@@ -9,13 +9,14 @@ from sqlalchemy import (
     Boolean,
     Index,
     JSON,
+    UniqueConstraint,
 )
 from sqlalchemy.sql import func
 from .base import Base
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
-from typing import Optional, List
-from sqlalchemy.orm import relationship, Mapped
+from typing import Optional
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
 
 
@@ -38,6 +39,8 @@ class User(Base):
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+    # Relationships
     settings = relationship(
         "UserSettings",
         back_populates="user",
@@ -48,29 +51,35 @@ class User(Base):
     skills = relationship("ProfessionalSkills", back_populates="user")
     social_links = relationship("SocialLinks", back_populates="user")
     certifications = relationship("Certification", back_populates="user")
-    projects = association_proxy("project_associations", "project")
     media_items = relationship("MediaGallery", back_populates="user")
     custom_sections = relationship("CustomSection", back_populates="user")
-    # Primary relationship (testimonials ABOUT this user)
-    testimonials = relationship(
-        "Testimonial", back_populates="user", foreign_keys="[Testimonial.user_id]"
-    )
-
-    # Optional: If you need to query testimonials this user WROTE
-    authored_testimonials = relationship(
-        "Testimonial",
-        foreign_keys="[Testimonial.author_user_id]",
-        viewonly=True,  # Since this is just for validation
-    )
     education = relationship("Education", back_populates="user")
     content_blocks = relationship("ContentBlock", back_populates="user")
     devices = relationship(
         "UserDevices", back_populates="user", cascade="all, delete-orphan"
     )
+
+    # Project relationships
     project_associations = relationship(
         "UserProjectAssociation",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    projects = association_proxy("project_associations", "project")
+
+    # Portfolio relationships
+    portfolios = relationship(
+        "Portfolio", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    # Testimonial relationships
+    testimonials = relationship(
+        "Testimonial", back_populates="user", foreign_keys="[Testimonial.user_id]"
+    )
+    authored_testimonials = relationship(
+        "Testimonial",
+        foreign_keys="[Testimonial.author_user_id]",
+        viewonly=True,
     )
 
     def __init__(
@@ -120,6 +129,129 @@ class UserSettings(Base):
         return f"<UserSettings(id={self.id}, owner_id={self.owner_id})>"
 
 
+class PortfolioProject(Base):
+    __tablename__ = "portfolio_projects"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    project_name = Column(String, nullable=False)
+    project_description = Column(String, nullable=False)
+    project_url = Column(String, nullable=True)
+    project_image_url = Column(String, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    is_public = Column(Boolean, default=True)
+
+    # FIXED: Corrected relationship name to match association model
+    user_associations = relationship(
+        "UserProjectAssociation",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    users = association_proxy("user_associations", "user")
+
+    # Social features
+    likes = relationship(
+        "ProjectLike", back_populates="project", cascade="all, delete-orphan"
+    )
+    comments = relationship(
+        "ProjectComment", back_populates="project", cascade="all, delete-orphan"
+    )
+
+    # Audit logs
+    audit_logs = relationship(
+        "ProjectAudit",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="ProjectAudit.created_at.desc()",
+    )
+
+    # Portfolio associations
+    portfolio_associations = relationship(
+        "PortfolioProjectAssociation",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    portfolios = association_proxy("portfolio_associations", "portfolio")
+
+    def __repr__(self):
+        return f"<PortfolioProject(id={self.id}, project_name={self.project_name})>"
+
+
+class Portfolio(Base):
+    __tablename__ = "portfolios"
+    __table_args__ = (
+        Index("idx_portfolio_user", "user_id"),
+        UniqueConstraint("user_id", "slug", name="uq_user_portfolio_slug"),
+        {"schema": "portfolio_pro_app"},
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"), nullable=False
+    )
+    name = Column(String(120), nullable=False)
+    slug = Column(String(120), nullable=False)
+    description = Column(Text, nullable=True)
+    is_public = Column(Boolean, default=True, index=True)
+    is_default = Column(Boolean, default=False)
+    cover_image_url = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="portfolios")
+    project_associations = relationship(
+        "PortfolioProjectAssociation",
+        back_populates="portfolio",
+        cascade="all, delete-orphan",
+        order_by="PortfolioProjectAssociation.position",
+    )
+    # Association proxy for direct project access
+    projects = association_proxy("project_associations", "project")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if "slug" not in kwargs and "name" in kwargs:
+            self.slug = self._generate_slug(kwargs["name"])
+
+    def _generate_slug(self, name):
+        # Simple slug generation - consider more robust solution
+        import re
+
+        base_slug = re.sub(r"[^a-zA-Z0-9\-_]", "-", name.lower())
+        base_slug = re.sub(r"-+", "-", base_slug).strip("-")
+        return f"{base_slug}-{str(uuid.uuid4())[:8]}"
+
+
+class PortfolioProjectAssociation(Base):
+    __tablename__ = "portfolio_project_associations"
+    __table_args__ = (
+        Index("idx_portfolio_project", "portfolio_id", "project_id"),
+        Index("idx_portfolio_order", "portfolio_id", "position"),
+        {"schema": "portfolio_pro_app"},
+    )
+
+    portfolio_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("portfolio_pro_app.portfolios.id"),
+        primary_key=True,
+    )
+    project_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("portfolio_pro_app.portfolio_projects.id"),
+        primary_key=True,
+    )
+    position = Column(Integer, default=0)
+    added_at = Column(DateTime(timezone=True), server_default=func.now())
+    notes = Column(String(255), nullable=True)
+
+    # Bidirectional relationships
+    portfolio = relationship("Portfolio", back_populates="project_associations")
+    project = relationship("PortfolioProject", back_populates="portfolio_associations")
+
+
 class UserProfile(Base):
     __tablename__ = "user_profile"
     __table_args__ = {"schema": "portfolio_pro_app"}
@@ -153,9 +285,7 @@ class ProfessionalSkills(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     skill_name = Column(String, nullable=False)
-    proficiency_level = Column(
-        String, nullable=False
-    )  # e.g., Beginner, Intermediate, Expert
+    proficiency_level = Column(String, nullable=False)
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -172,7 +302,7 @@ class SocialLinks(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
-    platform_name = Column(String, nullable=False)  # e.g., LinkedIn, GitHub
+    platform_name = Column(String, nullable=False)
     profile_url = Column(String, nullable=False)
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -192,47 +322,12 @@ class Certification(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     certification_name = Column(String, nullable=False)
     issuing_organization = Column(String, nullable=False)
-    issue_date = Column(DateTime(timezone=True), nullable=True)  #
-    expiration_date = Column(DateTime(timezone=True), nullable=True)  #
+    issue_date = Column(DateTime(timezone=True), nullable=True)
+    expiration_date = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     user = relationship("User", back_populates="certifications")
-
-
-class PortfolioProject(Base):
-    __tablename__ = "portfolio_projects"
-    __table_args__ = {"schema": "portfolio_pro_app"}
-
-    id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    project_name = Column(String, nullable=False)
-    project_description = Column(String, nullable=False)
-    project_url = Column(String, nullable=True)  # URL to the project or repository
-    project_image_url = Column(
-        String, nullable=True
-    )  # URL to the project or repository
-    created_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    is_public = Column(Boolean, default=True)
-    user_associations = relationship(
-        "UserProjectAssociation",
-        back_populates="project",
-        cascade="all, delete-orphan",
-    )
-    users = association_proxy("user_associations", "user")
-    likes = relationship(
-        "ProjectLike", back_populates="project", cascade="all, delete-orphan"
-    )
-    comments = relationship(
-        "ProjectComment", back_populates="project", cascade="all, delete-orphan"
-    )
-    audit_logs: Mapped[List["ProjectAudit"]] = relationship(
-        cascade="all, delete-orphan", order_by="desc(ProjectAudit.created_at)"
-    )
-
-    def __repr__(self):
-        return f"<PortfolioProject(id={self.id}, user_id={self.user_id}, project_name={self.project_name})>"
 
 
 class MediaGallery(Base):
@@ -241,7 +336,7 @@ class MediaGallery(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
-    media_type = Column(String, nullable=False)  # 'image', 'video', 'document', 'audio'
+    media_type = Column(String, nullable=False)
     url = Column(String, nullable=False)
     title = Column(String, nullable=True)
     description = Column(String, nullable=True)
@@ -257,9 +352,7 @@ class CustomSection(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
-    section_type = Column(
-        String, nullable=False
-    )  # 'timeline', 'gallery', 'testimonials', 'publications'
+    section_type = Column(String, nullable=False)
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
     position = Column(Integer, nullable=False)
@@ -278,9 +371,7 @@ class CustomSectionItem(Base):
         UUID(as_uuid=True), ForeignKey("portfolio_pro_app.custom_sections.id")
     )
     title = Column(String, nullable=False)
-    subtitle = Column(
-        String, nullable=True
-    )  # e.g., company for experience, degree for education
+    subtitle = Column(String, nullable=True)
     description = Column(String, nullable=True)
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
@@ -313,9 +404,7 @@ class ContentBlock(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
-    block_type = Column(
-        String, nullable=False
-    )  # 'about', 'services', 'process', 'fun_facts'
+    block_type = Column(String, nullable=False)
     title = Column(String, nullable=True)
     content = Column(Text, nullable=False)
     position = Column(Integer, nullable=False)
@@ -329,12 +418,10 @@ class Testimonial(Base):
     __table_args__ = {"schema": "portfolio_pro_app"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
-    )  # Who the testimonial is FOR
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     author_user_id = Column(
         UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
-    )  # Who CREATED the testimonial
+    )
     author_name = Column(String, nullable=False)
     author_title = Column(String, nullable=True)
     author_company = Column(String, nullable=True)
@@ -344,13 +431,8 @@ class Testimonial(Base):
     is_approved = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    user = relationship(
-        "User", back_populates="testimonials", foreign_keys=[user_id]
-    )  # Primary relationship
-    author = relationship(
-        "User", viewonly=True, foreign_keys=[author_user_id]
-    )  # Read-only access to author
+    user = relationship("User", back_populates="testimonials", foreign_keys=[user_id])
+    author = relationship("User", viewonly=True, foreign_keys=[author_user_id])
 
 
 class UserDevices(Base):
@@ -360,7 +442,7 @@ class UserDevices(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     device_name = Column(String, nullable=False)
-    device_type = Column(String, nullable=False)  # e.g., 'mobile', 'desktop', 'tablet'
+    device_type = Column(String, nullable=False)
     last_used = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="devices")
@@ -386,10 +468,12 @@ class UserProjectAssociation(Base):
         primary_key=True,
     )
     role = Column(String, nullable=True)
+    contribution_description = Column(String, nullable=True)
     can_edit = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="project_associations")
+    # FIXED: Changed to match the corrected relationship name in PortfolioProject
     project = relationship("PortfolioProject", back_populates="user_associations")
 
 
@@ -401,12 +485,9 @@ class ProjectLike(Base):
     project_id = Column(
         UUID(as_uuid=True), ForeignKey("portfolio_pro_app.portfolio_projects.id")
     )
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
-    )  # Who liked it
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
     project = relationship("PortfolioProject", back_populates="likes")
     user = relationship("User")
 
@@ -419,26 +500,20 @@ class ProjectComment(Base):
     project_id = Column(
         UUID(as_uuid=True), ForeignKey("portfolio_pro_app.portfolio_projects.id")
     )
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
-    )  # Author
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     parent_comment_id = Column(
         UUID(as_uuid=True),
         ForeignKey("portfolio_pro_app.project_comments.id"),
         nullable=True,
-    )  # For replies
+    )
 
-    # Relationships
     project = relationship("PortfolioProject", back_populates="comments")
-
     user = relationship("User")
-
     replies = relationship(
         "ProjectComment", back_populates="parent_comment", remote_side=[id]
     )
-
     parent_comment = relationship(
         "ProjectComment", back_populates="replies", remote_side=[parent_comment_id]
     )
@@ -447,12 +522,10 @@ class ProjectComment(Base):
 class ProjectAudit(Base):
     __tablename__ = "project_audit_logs"
     __table_args__ = (
-        {"schema": "portfolio_pro_app"},  # Schema definition as a dictionary
-        Index(
-            "idx_project_audit_project_id", "project_id"
-        ),  # Indexes as separate arguments
+        Index("idx_project_audit_project_id", "project_id"),
         Index("idx_project_audit_user_id", "user_id"),
         Index("idx_project_audit_action", "action"),
+        {"schema": "portfolio_pro_app"},
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -470,6 +543,5 @@ class ProjectAudit(Base):
     user_agent = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    project: Mapped["PortfolioProject"] = relationship(back_populates="audit_logs")
-    user: Mapped["User"] = relationship(backref="project_audits")
+    project = relationship("PortfolioProject", back_populates="audit_logs")
+    user = relationship("User")

@@ -125,7 +125,12 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
 
-   
+    return user
+
+
+async def optional_current_user(
+    user: Optional[User] = Depends(get_current_user),  # Will be None if no auth
+) -> Optional[User]:
     return user
 
 
@@ -159,7 +164,7 @@ async def get_user_settings(
     result = await db.execute(
         select(User)
         .options(selectinload(User.settings))
-        .where(cast(User.id == current_user.id, Boolean) == True)
+        .where(User.id == current_user.id)
     )
     user = result.scalars().first()
 
@@ -182,8 +187,8 @@ async def get_user_with_settings(
         .options(selectinload(User.settings))
         .where(
             and_(
-                cast(User.id == current_user.id, Boolean) == True,
-                cast(User.is_active, Boolean) == True,
+                User.id == current_user.id,
+                User.is_active,
             )
         )
     )
@@ -250,8 +255,8 @@ async def authenticate_user(
     result = await db.execute(
         select(User).where(
             or_(
-                cast(User.username == username_or_email, Boolean) == True,
-                cast(User.email == username_or_email, Boolean) == True,
+                User.username == username_or_email,
+                User.email == username_or_email,
             )
         )
     )

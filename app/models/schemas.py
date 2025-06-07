@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 from typing import Union
 
+
 class UserBase(BaseModel):
     email: EmailStr
     username: str
@@ -161,18 +162,14 @@ class CertificationUpdate(BaseModel):
     expiration_date: Optional[Union[datetime, date]] = None
 
 
-
-
 # Portfolio Project Schemas
 class PortfolioProjectBase(BaseModel):
+    id: Optional[uuid.UUID] = None
     project_name: str
     project_description: str
     project_url: Optional[str] = None
     project_image_url: Optional[str] = None
-
-
-class PortfolioProjectCreate(PortfolioProjectBase):
-    user_id: Optional[uuid.UUID] = None
+    is_public: Optional[bool] = True
 
 
 class PortfolioProjectUpdate(BaseModel):
@@ -183,11 +180,17 @@ class PortfolioProjectUpdate(BaseModel):
 
 
 class PortfolioProject(PortfolioProjectBase):
-    id: uuid.UUID
     user_id: uuid.UUID
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class CollaboratorResponse(BaseModel):
+    username: str
+    role: str
+    can_edit: bool
+    created_at: datetime
+    contribution_description: Optional[str] = None  # Explicitly handles None
 
 
 # Media Gallery Schemas
@@ -377,6 +380,7 @@ class Testimonial(TestimonialBase):
 # User Project Association Schemas
 class UserProjectAssociationBase(BaseModel):
     role: Optional[str] = None
+    can_edit: Optional[bool] = False  # Added to match SQLAlchemy model
 
 
 class UserProjectAssociationCreate(UserProjectAssociationBase):
@@ -386,12 +390,17 @@ class UserProjectAssociationCreate(UserProjectAssociationBase):
 
 class UserProjectAssociationUpdate(BaseModel):
     role: Optional[str] = None
+    can_edit: Optional[bool] = None  # Optional for updates
 
 
 class UserProjectAssociation(UserProjectAssociationBase):
     user_id: uuid.UUID
     project_id: uuid.UUID
     created_at: datetime
+    project: Optional["PortfolioProject"] = (
+        None  # Uncomment if PortfolioProject schema is defined
+    )
+    user: Optional["DBUser"] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -442,3 +451,32 @@ class ProjectComment(ProjectCommentBase):
 
 # Self-referencing model fix for ProjectComment
 ProjectComment.model_rebuild()
+
+
+# Project Audit Schemas
+class ProjectAuditBase(BaseModel):
+    action: str
+    details: Optional[dict] = None  # JSON field becomes dict in Pydantic
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+
+class ProjectAuditCreate(ProjectAuditBase):
+    project_id: uuid.UUID
+    user_id: uuid.UUID
+
+
+class ProjectAuditUpdate(BaseModel):
+    action: Optional[str] = None
+    details: Optional[dict] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+
+class ProjectAudit(ProjectAuditBase):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    user_id: uuid.UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
