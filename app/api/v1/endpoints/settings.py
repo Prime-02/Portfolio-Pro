@@ -9,7 +9,7 @@ from app.models.schemas import (
 from app.models.db_models import UserSettings, User
 from app.core.security import get_user_settings, get_current_user
 from typing import Annotated, Union
-from app.core.user import update_user_info, create_profile
+from app.core.user import update_user_info, create_profile, get_profile, get_user_info
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 
@@ -29,32 +29,34 @@ async def get_user_settings(
     return settings
 
 
-@router.get("/info", status_code=status.HTTP_200_OK, response_model=DBUser)
+@router.get("/info", status_code=status.HTTP_200_OK, response_model=UserUpdateRequest)
 async def get_user_info(
-    current_user: Annotated[DBUser, Depends(get_current_user)],
-) -> DBUser:
+    current_user: Annotated[UserUpdateRequest, Depends(get_current_user)],
+) -> UserUpdateRequest:
     """
     Retrieve user information.
     """
     return current_user
 
 
-@router.put("/info", status_code=status.HTTP_200_OK, response_model=DBUser)
+@router.put("/info", status_code=status.HTTP_200_OK, response_model=UserUpdateRequest)
 async def user_info_update(
     update_data: UserUpdateRequest,
-    current_user: Annotated[Union[DBUser, User], Depends(get_current_user)],
+    current_user: Annotated[Union[UserUpdateRequest, User], Depends(get_current_user)],
     db: AsyncSession = Depends(get_db),
-) -> DBUser:
-    update_dict = update_data.model_dump(exclude_unset=True)
-
-    # Create the commons dictionary with correct key names
+) -> UserUpdateRequest:
     commons = {
-        "data": update_dict,  # Must match what get_common_params expects
+        "data": update_data.model_dump(exclude_unset=True),
         "user": current_user,
         "db": db,
     }
-
     return await update_user_info(commons)
+
+
+@router.get("/info", response_model=UserUpdateRequest)
+async def view_info(profile: UserUpdateRequest = Depends(get_user_info)):
+    """Get the current user's profile"""
+    return profile
 
 
 @router.put(
@@ -73,3 +75,16 @@ async def user_profile_update(
     }
 
     return await create_profile(commons)
+
+
+@router.get("/profile", response_model=UserProfileRequest)
+async def view_profile(
+    current_user: Annotated[Union[DBUser, User], Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> UserProfileRequest:
+    """Get the current user's profile"""
+    commons = {
+        "user": current_user,
+        "db": db,
+    }
+    return await get_profile(commons)

@@ -52,6 +52,9 @@ class UserUpdateRequest(BaseModel):
     is_active: Optional[bool] = None
     role: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+
 
 class UserProfileRequest(BaseModel):
     user_id: Optional[uuid.UUID] = None

@@ -3,14 +3,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update, insert
 from app.models.db_models import User, UserProfile
-from app.models.schemas import DBUser, UserProfileRequest
+from app.models.schemas import (
+    DBUser,
+    UserProfileRequest,
+    UserUpdateRequest,
+    UserUpdateRequest,
+)
 from app.core.security import get_current_user
 from fastapi import HTTPException, status, Depends
 from sqlalchemy import Boolean, cast
 from app.database import get_db
 from app.core.security import validate_username
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.sql.expression import exists
+from sqlalchemy.orm import selectinload
 
 
 async def get_common_params(
@@ -21,9 +26,15 @@ async def get_common_params(
     return {"data": data, "user": user, "db": db}
 
 
+unathorized = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,  # More appropriate status code
+    detail="Authentication required",
+)
+
+
 async def update_user_info(
     commons: dict = Depends(get_common_params),
-) -> DBUser:
+) -> UserUpdateRequest:
     update_data = commons["data"]
     user = commons["user"]
     db = commons["db"]
@@ -70,13 +81,50 @@ async def update_user_info(
                 detail="User not found after update",
             )
 
-        return DBUser.model_validate(updated_user)
+        return UserUpdateRequest.from_orm(updated_user)
 
     except Exception as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating user: {str(e)}",
+        )
+
+
+async def get_user_info(
+    commons: dict = Depends(get_common_params),
+) -> UserUpdateRequest:  # Changed to UserResponse (see note below)
+    user = commons["user"]
+    db: AsyncSession = commons["db"]  # Fixed type annotation
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
+        )
+
+    try:
+        # Execute query with eager loading of common relationships
+        result = await db.execute(
+            select(User)
+            .where(User.id == user.id)
+            .options(
+                selectinload(User.profile),  # If you have a profile relationship
+                selectinload(User.social_links),  # If you need social links
+            )
+        )
+        user_info = result.scalar_one_or_none()
+
+        if not user_info:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        return user_info
+
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving user information",
         )
 
 
@@ -109,7 +157,7 @@ async def create_profile(
 
             await db.commit()
             await db.refresh(existing_profile)
-            return UserProfileRequest.from_orm(existing_profile)
+            return UserProfileRequest.model_validate(existing_profile)
         else:
             # Create new profile
             new_profile = UserProfile(user_id=user.id, **upload_data)
@@ -128,4 +176,39 @@ async def create_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unexpected error: {str(e)}",
+        )
+
+
+async def get_profile(
+    commons: dict = Depends(get_common_params),
+) -> UserProfileRequest:
+    user = commons["user"]
+    db: AsyncSession = commons["db"]
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,  # More appropriate status code
+            detail="Authentication required",
+        )
+
+    try:
+        result = await db.execute(
+            select(UserProfile)
+            .where(UserProfile.user_id == user.id)
+            .options(selectinload(UserProfile.user))
+        )  # Eager load user if needed
+        profile = result.scalar_one_or_none()
+
+        if not profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,  # More semantically correct
+                detail="Profile not found",
+            )
+
+        return profile
+
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error occurred",
         )
