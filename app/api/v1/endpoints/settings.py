@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from app.models.schemas import (
     UserSettings as DBSettings,
+    UserSettingsBase,
     DBUser,
     UserUpdateRequest,
     UserProfileRequest,
@@ -9,7 +10,13 @@ from app.models.schemas import (
 from app.models.db_models import UserSettings, User
 from app.core.security import get_user_settings, get_current_user
 from typing import Annotated, Union
-from app.core.user import update_user_info, create_profile, get_profile, get_user_info
+from app.core.user import (
+    update_user_info,
+    create_profile,
+    get_profile,
+    get_user_info,
+    update_user_settings,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 
@@ -19,7 +26,7 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=DBSettings)
-async def get_user_settings(
+async def user_settings(
     settings: Annotated[UserSettings, Depends(get_user_settings)],
 ) -> DBSettings:
     """
@@ -29,8 +36,22 @@ async def get_user_settings(
     return settings
 
 
+@router.put("/", status_code=status.HTTP_200_OK, response_model=UserSettingsBase)
+async def update_settings(
+    update_data: UserSettingsBase,
+    current_user: Annotated[Union[DBUser, User], Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+) -> UserSettingsBase:
+    commons = {
+        "data": update_data.model_dump(exclude_unset=True),
+        "user": current_user,
+        "db": db,
+    }
+    return await update_user_settings(commons)
+
+
 @router.get("/info", status_code=status.HTTP_200_OK, response_model=UserUpdateRequest)
-async def get_user_info(
+async def user_info_get(
     current_user: Annotated[UserUpdateRequest, Depends(get_current_user)],
 ) -> UserUpdateRequest:
     """

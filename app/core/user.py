@@ -2,9 +2,9 @@ from typing import Dict, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update, insert
-from app.models.db_models import User, UserProfile
+from app.models.db_models import User, UserProfile, UserSettings
 from app.models.schemas import (
-    DBUser,
+    UserSettingsBase,
     UserProfileRequest,
     UserUpdateRequest,
     UserUpdateRequest,
@@ -211,4 +211,59 @@ async def get_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database error occurred",
+        )
+
+
+async def update_user_settings(
+    commons: dict = Depends(get_common_params),
+) -> UserSettingsBase:
+    update_data = commons["data"]
+    user = commons["user"]
+    db = commons["db"]
+
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided"
+        )
+
+    # Filter out None values and create update dictionary
+    valid_updates = {k: v for k, v in update_data.items() if v != ""}
+
+    # Validate username format
+    if not valid_updates:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No valid fields to update"
+        )
+
+    try:
+        # Build the update statement
+        stmt = (
+            update(UserSettings)
+            .where(cast(UserSettings.owner_id == user.id, Boolean))
+            .values(**valid_updates)
+            .execution_options(synchronize_session="fetch")
+        )
+
+        await db.execute(stmt)
+        await db.commit()
+
+        # Fetch the updated user
+        result = await db.execute(
+            select(UserSettings).where(cast(UserSettings.owner_id == user.id, Boolean))
+        )
+        updated_settings = result.scalars().first()
+
+        if not updated_settings:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Settings not found after update",
+            )
+
+        return UserSettingsBase.from_orm(updated_settings)
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating settings: {str(e)}",
         )

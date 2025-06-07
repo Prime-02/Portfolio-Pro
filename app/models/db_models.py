@@ -31,6 +31,7 @@ class User(Base):
     profile_picture = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     is_active = Column(Boolean, default=False)
+    is_visible = Column(Boolean, default=True)
     role = Column(String, default="user")
     hashed_password = Column(String)
     created_at = Column(
@@ -49,7 +50,17 @@ class User(Base):
     projects = association_proxy("project_associations", "project")
     media_items = relationship("MediaGallery", back_populates="user")
     custom_sections = relationship("CustomSection", back_populates="user")
-    testimonials = relationship("Testimonial", back_populates="user")
+    # Primary relationship (testimonials ABOUT this user)
+    testimonials = relationship(
+        "Testimonial", back_populates="user", foreign_keys="[Testimonial.user_id]"
+    )
+
+    # Optional: If you need to query testimonials this user WROTE
+    authored_testimonials = relationship(
+        "Testimonial",
+        foreign_keys="[Testimonial.author_user_id]",
+        viewonly=True,  # Since this is just for validation
+    )
     education = relationship("Education", back_populates="user")
     content_blocks = relationship("ContentBlock", back_populates="user")
     devices = relationship(
@@ -70,6 +81,7 @@ class User(Base):
         middlename: str = "",
         lastname: str = "",
         is_active: bool = True,
+        is_visible: bool = True,
         role: str = "user",
         id: Optional[uuid.UUID] = None,
     ):
@@ -80,6 +92,7 @@ class User(Base):
         self.lastname = lastname
         self.hashed_password = hashed_password
         self.is_active = is_active
+        self.is_visible = is_visible
         self.role = role
         self.id = id if id else uuid.uuid4()
 
@@ -312,19 +325,28 @@ class Testimonial(Base):
     __table_args__ = {"schema": "portfolio_pro_app"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
+    )  # Who the testimonial is FOR
+    author_user_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id")
+    )  # Who CREATED the testimonial
     author_name = Column(String, nullable=False)
     author_title = Column(String, nullable=True)
     author_company = Column(String, nullable=True)
-    author_relationship = Column(
-        String, nullable=True
-    )  # "Colleague", "Manager", "Client"
+    author_relationship = Column(String, nullable=True)
     content = Column(String, nullable=False)
-    rating = Column(Integer, nullable=True)  # 1-5 scale
+    rating = Column(Integer, nullable=True)
     is_approved = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    user = relationship("User", back_populates="testimonials")
+    # Relationships
+    user = relationship(
+        "User", back_populates="testimonials", foreign_keys=[user_id]
+    )  # Primary relationship
+    author = relationship(
+        "User", viewonly=True, foreign_keys=[author_user_id]
+    )  # Read-only access to author
 
 
 class UserDevices(Base):
