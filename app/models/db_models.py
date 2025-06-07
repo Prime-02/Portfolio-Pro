@@ -8,12 +8,13 @@ from sqlalchemy import (
     Text,
     Boolean,
     Index,
+    JSON,
 )
 from sqlalchemy.sql import func
 from .base import Base
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.ext.associationproxy import association_proxy
 
@@ -191,8 +192,8 @@ class Certification(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     certification_name = Column(String, nullable=False)
     issuing_organization = Column(String, nullable=False)
-    issue_date = Column(DateTime(timezone=True), nullable=True)
-    expiration_date = Column(DateTime(timezone=True), nullable=True)
+    issue_date = Column(DateTime(timezone=True), nullable=True)  #
+    expiration_date = Column(DateTime(timezone=True), nullable=True)  #
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -204,7 +205,6 @@ class PortfolioProject(Base):
     __table_args__ = {"schema": "portfolio_pro_app"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
     project_name = Column(String, nullable=False)
     project_description = Column(String, nullable=False)
     project_url = Column(String, nullable=True)  # URL to the project or repository
@@ -214,6 +214,7 @@ class PortfolioProject(Base):
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+    is_public = Column(Boolean, default=True)
     user_associations = relationship(
         "UserProjectAssociation",
         back_populates="project",
@@ -225,6 +226,9 @@ class PortfolioProject(Base):
     )
     comments = relationship(
         "ProjectComment", back_populates="project", cascade="all, delete-orphan"
+    )
+    audit_logs: Mapped[List["ProjectAudit"]] = relationship(
+        cascade="all, delete-orphan", order_by="desc(ProjectAudit.created_at)"
     )
 
     def __repr__(self):
@@ -367,8 +371,12 @@ class UserDevices(Base):
 
 class UserProjectAssociation(Base):
     __tablename__ = "user_project_association"
+    __table_args__ = (
+        Index("idx_user_project_user_id", "user_id"),
+        Index("idx_user_project_project_id", "project_id"),
+        {"schema": "portfolio_pro_app"},
+    )
 
-    # Define columns FIRST
     user_id = Column(
         UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"), primary_key=True
     )
@@ -378,20 +386,9 @@ class UserProjectAssociation(Base):
         primary_key=True,
     )
     role = Column(String, nullable=True)
+    can_edit = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # THEN define table args
-    __tablename__ = "user_project_association"
-    __table_args__ = {
-        "schema": "portfolio_pro_app",
-        # Indexes must be defined separately, not in the dict
-    }
-
-    # Define indexes AFTER the table args
-    Index("idx_user_project_user_id", "user_id")
-    Index("idx_user_project_project_id", "project_id")
-
-    # Relationships (make sure these models are imported correctly)
     user = relationship("User", back_populates="project_associations")
     project = relationship("PortfolioProject", back_populates="user_associations")
 
@@ -445,3 +442,34 @@ class ProjectComment(Base):
     parent_comment = relationship(
         "ProjectComment", back_populates="replies", remote_side=[parent_comment_id]
     )
+
+
+class ProjectAudit(Base):
+    __tablename__ = "project_audit_logs"
+    __table_args__ = (
+        {"schema": "portfolio_pro_app"},  # Schema definition as a dictionary
+        Index(
+            "idx_project_audit_project_id", "project_id"
+        ),  # Indexes as separate arguments
+        Index("idx_project_audit_user_id", "user_id"),
+        Index("idx_project_audit_action", "action"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("portfolio_pro_app.portfolio_projects.id"),
+        nullable=False,
+    )
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"), nullable=False
+    )
+    action = Column(String(50), nullable=False)
+    details = Column(JSON, nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    project: Mapped["PortfolioProject"] = relationship(back_populates="audit_logs")
+    user: Mapped["User"] = relationship(backref="project_audits")

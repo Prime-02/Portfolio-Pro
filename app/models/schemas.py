@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 from datetime import datetime
 import uuid
-
+from typing import Union
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -135,7 +135,6 @@ class SocialLinksUpdate(BaseModel):
 
 
 class SocialLinks(SocialLinksBase):
-    id: uuid.UUID
     user_id: uuid.UUID
     created_at: datetime
 
@@ -144,29 +143,24 @@ class SocialLinks(SocialLinksBase):
 
 # Certification Schemas
 class CertificationBase(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    created_at: datetime
     certification_name: str
     issuing_organization: str
-    issue_date: Optional[datetime] = None
-    expiration_date: Optional[datetime] = None
+    issue_date: Optional[Union[datetime, date]] = None
+    expiration_date: Optional[Union[datetime, date]] = None
 
-
-class CertificationCreate(CertificationBase):
-    user_id: Optional[uuid.UUID] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CertificationUpdate(BaseModel):
     certification_name: Optional[str] = None
     issuing_organization: Optional[str] = None
-    issue_date: Optional[datetime] = None
-    expiration_date: Optional[datetime] = None
+    issue_date: Optional[Union[datetime, date]] = None
+    expiration_date: Optional[Union[datetime, date]] = None
 
 
-class Certification(CertificationBase):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 # Portfolio Project Schemas

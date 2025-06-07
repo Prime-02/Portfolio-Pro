@@ -56,7 +56,7 @@ async def add_social(
         )
 
     social_id = uuid.uuid4()
-    created_at = datetime.utcnow()
+    created_at = datetime.now()
 
     new_social = SocialLinks(
         id=social_id,
