@@ -9,17 +9,17 @@ env/
 .venv/
 
 # # Environment files
-# .env
-# .env.local
-# .env*.local
+.env
+.env.local
+.env*.local
 
 # # IDE & Editor files
-# .vscode/
-# .idea/
+.vscode/
+.idea/
 
 # # Build & distribution files
-# dist/
-# build/
-# *.egg-info/
+dist/
+build/
+*.egg-info/
 
-# alembic*
+alembic*
