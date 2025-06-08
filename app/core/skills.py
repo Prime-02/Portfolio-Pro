@@ -51,7 +51,7 @@ async def add_skill(
         )
 
     skill_id = uuid.uuid4()
-    created_at = datetime.utcnow()
+    created_at = datetime.now()
 
     new_skill = ProfessionalSkills(
         id=skill_id,

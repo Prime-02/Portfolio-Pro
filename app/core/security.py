@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any, Dict, Optional, Union
 import bcrypt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -19,6 +19,15 @@ from app.models.schemas import DBUser, UserWithSettings
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+
+
+# In your security.py or dependencies.py
+async def optional_oauth2_scheme(request: Request) -> Optional[str]:
+    try:
+        return await oauth2_scheme(request)
+    except HTTPException:
+        return None  # Instead of raising 401
+
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -102,9 +111,13 @@ async def verify_token(token: str = Depends(oauth2_scheme)) -> Dict[str, int]:
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> User:
+    strict: bool = False,  # New parameter to control error behavior
+) -> Optional[User]:
     """
-    Get the current authenticated user from JWT token.
+    Get authenticated user with error control.
+
+    Args:
+        strict: If True, raises 401 on failure. If False, returns None.
     """
     try:
         payload = jwt.decode(
@@ -113,25 +126,41 @@ async def get_current_user(
             algorithms=[settings.ALGORITHM],
         )
         username: Any = payload.get("sub")
-        if not username:  # More explicit than 'is None'
+        if not username:
+            if strict:
+                raise credentials_exception
+            return None
+
+        result = await db.execute(select(User).where(User.username == username))
+        user = result.scalar_one_or_none()
+
+        if user is None and strict:
             raise credentials_exception
-    except JWTError as e:
-        raise credentials_exception from e  # Preserve exception chain
+        return user
 
-    # Use scalar() instead of scalar_one_or_none() for better error handling
-    result = await db.execute(select(User).where(User.username == username))
-    user = result.scalar()
-
-    if user is None:
-        raise credentials_exception
-
-    return user
+    except JWTError:
+        if strict:
+            raise credentials_exception
+        return None
 
 
 async def optional_current_user(
-    user: Optional[User] = Depends(get_current_user),  # Will be None if no auth
+    token: Annotated[str, Depends(optional_oauth2_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Optional[User]:
-    return user
+    if not token:  # Early exit if no token provided
+        return None
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+        username = payload.get("sub")
+        if not username:
+            return None
+        result = await db.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
+    except JWTError:
+        return None
 
 
 async def get_current_active_user(

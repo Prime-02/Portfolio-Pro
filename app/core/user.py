@@ -8,6 +8,7 @@ from app.models.schemas import (
     UserProfileRequest,
     UserUpdateRequest,
     UserUpdateRequest,
+    UserProjectAssociation,
 )
 from app.core.security import get_current_user
 from fastapi import HTTPException, status, Depends
@@ -16,6 +17,7 @@ from app.database import get_db
 from app.core.security import validate_username
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
+import uuid
 
 
 async def get_common_params(
@@ -267,3 +269,32 @@ async def update_user_settings(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating settings: {str(e)}",
         )
+
+
+async def verify_edit_permission(
+    project_id: uuid.UUID, user: User, db: AsyncSession
+) -> None:
+    """Verify user has edit permissions for a project."""
+    result = await db.execute(
+        select(UserProjectAssociation).filter(
+            UserProjectAssociation.user_id == user.id,
+            UserProjectAssociation.project_id == project_id,
+            UserProjectAssociation.can_edit == True,
+        )
+    )
+    if not result.scalars().first():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have edit permissions for this project",
+        )
+
+
+async def get_user_by_username(username: str, db: AsyncSession) -> User:
+    """Get user by username with error handling."""
+    result = await db.execute(select(User).filter(User.username == username))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return user

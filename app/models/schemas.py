@@ -167,16 +167,24 @@ class PortfolioProjectBase(BaseModel):
     id: Optional[uuid.UUID] = None
     project_name: str
     project_description: str
+    project_category: Optional[str] = None
     project_url: Optional[str] = None
     project_image_url: Optional[str] = None
     is_public: Optional[bool] = True
+    is_completed: Optional[bool] = False
+    is_concept: Optional[bool] = False
+    created_at: datetime
 
 
 class PortfolioProjectUpdate(BaseModel):
     project_name: Optional[str] = None
     project_description: Optional[str] = None
+    project_category: Optional[str] = None
     project_url: Optional[str] = None
     project_image_url: Optional[str] = None
+    is_public: Optional[bool] = True
+    is_completed: Optional[bool] = False
+    is_concept: Optional[bool] = False
 
 
 class PortfolioProject(PortfolioProjectBase):
@@ -185,12 +193,14 @@ class PortfolioProject(PortfolioProjectBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class CollaboratorResponse(BaseModel):
     username: str
     role: str
     can_edit: bool
-    created_at: datetime
-    contribution_description: Optional[str] = None  # Explicitly handles None
+    created_at: Optional[datetime] = None
+    contribution_description: Optional[str] = None
+    contribution: Optional[str] = None
 
 
 # Media Gallery Schemas

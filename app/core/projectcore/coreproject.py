@@ -5,20 +5,22 @@ from app.models.schemas import (
 )
 from app.models.db_models import PortfolioProject, User, UserProjectAssociation
 from typing import Sequence
-from typing import Dict, Union, List, Optional, Tuple
+from typing import Dict, Union, List, Optional, Any
 from fastapi import HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from app.core.security import get_current_user
 from app.database import get_db
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.sql import Select
-from sqlalchemy import exists, literal_column
+from sqlalchemy import exists, literal_column, and_, or_, case, func
+from app.core.user import get_user_by_username, verify_edit_permission
+from sqlalchemy.sql.functions import coalesce
 
 
 async def get_common_params(
-    data: Dict[str, str],
+    data: Dict[str, Union[str, bool]],
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Union[Dict[str, str], User, AsyncSession]]:
@@ -37,7 +39,7 @@ async def add_project(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No project data provided"
         )
-    if not all(k in project_data for k in ["project_name", "project_description"]):
+    if not all(k in project_data for k in ["project_name", "project_description", "project_category"]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Project name and description are required",
@@ -47,9 +49,13 @@ async def add_project(
     project = PortfolioProject(
         project_name=project_data["project_name"],
         project_description=project_data["project_description"],
+        project_category=project_data["project_category"],
         project_url=project_data.get("project_url"),
         project_image_url=project_data.get("project_image_url"),
-        is_public=project_data.get("is_public", False),
+        is_public=project_data.get("is_public", True),
+        created_at=datetime.now(),
+        is_completed=project_data.get("is_completed", False),
+        is_concept=project_data.get("is_concept", False),
     )
 
     db.add(project)
@@ -64,6 +70,7 @@ async def add_project(
         can_edit=True,
         created_at=datetime.now(),
         contribution_description=project_data.get("contribution_description"),
+        contribution=project_data.get("contribution"),
     )
 
     db.add(association)
@@ -76,7 +83,7 @@ async def get_project_by_id(
     project_id: uuid.UUID,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> PortfolioProject:
+) -> PortfolioProjectBase:
     """Get a specific project by ID if the user has access to it."""
     # Check if user has access to this project
     result = await db.execute(
@@ -111,7 +118,7 @@ async def get_all_user_projects(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     include_public: bool = False,
-) -> Sequence[PortfolioProject]:
+) -> Sequence[PortfolioProjectBase]:
     """Get all projects for the current user, optionally including public projects."""
     query = (
         select(PortfolioProject)
@@ -143,7 +150,7 @@ async def update_project(
     project_data: PortfolioProjectUpdate,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> PortfolioProject:
+) -> PortfolioProjectUpdate:
     """Update a project if the user has edit permissions."""
     # Check if user has edit rights to this project
     result = await db.execute(
@@ -242,6 +249,9 @@ async def get_project_collaborators(
             literal_column("user_project_association.contribution_description").label(
                 "contribution_description"
             ),
+            literal_column("user_project_association.contribution").label(
+                "contribution"
+            ),
         )
         .select_from(UserProjectAssociation)
         .join(User, UserProjectAssociation.user_id == User.id)
@@ -259,6 +269,7 @@ async def get_project_collaborators(
             can_edit=row.can_edit,
             created_at=row.created_at,
             contribution_description=row.contribution_description,
+            contribution=row.contribution,
         )
         for row in collaborators
     ]
@@ -270,9 +281,10 @@ async def add_collaborator(
     role: str,
     can_edit: bool,
     contribution_description: Optional[str] = None,
+    contribution: Optional[str] = None,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, str]:
+) -> Dict[str, Union[str, bool, datetime]]:
     """
     Add a collaborator to a project if the requesting user has edit permissions.
 
@@ -282,6 +294,7 @@ async def add_collaborator(
         role: The role of the collaborator (e.g., "contributor", "reviewer")
         can_edit: Whether the collaborator can edit the project
         contribution_description: Description of the collaborator's contribution
+        contribution_description: The collaborator's contribution
         user: The current authenticated user (injected by dependency)
         db: The database session (injected by dependency)
 
@@ -328,13 +341,15 @@ async def add_collaborator(
 
     # Check if user is already a collaborator
     existing_association = await db.scalar(
-    select(
-        exists().where(
-            UserProjectAssociation.user_id == collaborator_user.id,
-            UserProjectAssociation.project_id == project_id,
+        select(
+            exists().where(
+                and_(
+                    UserProjectAssociation.user_id == collaborator_user.id,
+                    UserProjectAssociation.project_id == project_id,
+                )
+            )
         )
     )
-)
     if existing_association:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -349,6 +364,7 @@ async def add_collaborator(
         can_edit=can_edit,
         created_at=datetime.now(),
         contribution_description=contribution_description,
+        contribution=contribution,
     )
 
     db.add(new_association)
@@ -445,3 +461,261 @@ async def remove_collaborator(
     await db.commit()
 
     return {"message": "Collaborator removed successfully"}
+
+
+async def get_all_projects_by_user(
+    username: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Sequence[PortfolioProjectBase]:
+    """
+    Get all projects created by a specific user (including private ones if requested by owner).
+
+    Args:
+        username: Username of the user whose projects to retrieve
+        db: Database session
+        current_user: The currently authenticated user
+
+    Returns:
+        List of projects created by the user
+
+    Raises:
+        HTTPException: If user not found or unauthorized to view private projects
+    """
+    # Get the target user
+    result = await db.execute(select(User).filter(User.username == username))
+    target_user = result.scalars().first()
+
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    # Check if current user is requesting their own projects
+    is_self = current_user.id == target_user.id
+
+    # Base query for projects owned by the target user
+    query = (
+        select(PortfolioProject)
+        .join(
+            UserProjectAssociation,
+            PortfolioProject.id == UserProjectAssociation.project_id,
+        )
+        .filter(
+            UserProjectAssociation.user_id == target_user.id,
+            # UserProjectAssociation.role == "owner",
+        )
+    )
+
+    # If not requesting their own projects, filter for public projects only
+    if not is_self:
+        query = query.filter(PortfolioProject.is_public == True)
+
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def search_projects(
+    search_term: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    include_public: bool = True,
+) -> Sequence[PortfolioProjectBase]:
+    """
+    Search projects by name or description.
+    Returns matching projects the user has access to plus public ones if requested.
+    """
+    # Base query for projects user has access to
+    user_projects = (
+        select(PortfolioProject)
+        .join(UserProjectAssociation)
+        .filter(UserProjectAssociation.user_id == current_user.id)
+    )
+
+    if include_public:
+        public_projects = select(PortfolioProject).filter(
+            PortfolioProject.is_public == True,
+            ~PortfolioProject.id.in_(
+                select(UserProjectAssociation.project_id).filter(
+                    UserProjectAssociation.user_id == current_user.id
+                )
+            ),
+        )
+        query = user_projects.union(public_projects)
+    else:
+        query = user_projects
+
+    # Add search filters
+    query = query.select(
+        or_(
+            PortfolioProject.project_name.ilike(f"%{search_term}%"),
+            PortfolioProject.project_description.ilike(f"%{search_term}%"),
+            PortfolioProject.project_category.ilike(f"%{search_term}%"),
+        )
+    )
+
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def get_projects_by_status(
+    is_completed: Optional[bool] = None,
+    is_concept: Optional[bool] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Sequence[PortfolioProjectBase]:
+    """
+    Filter projects by completion status and/or concept status.
+    """
+    query = (
+        select(PortfolioProject)
+        .join(UserProjectAssociation)
+        .filter(UserProjectAssociation.user_id == current_user.id)
+    )
+
+    if is_completed is not None:
+        query = query.filter(PortfolioProject.is_completed == is_completed)
+
+    if is_concept is not None:
+        query = query.filter(PortfolioProject.is_concept == is_concept)
+
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def update_collaborator_permissions(
+    project_id: uuid.UUID,
+    username: str,
+    role: Optional[str] = None,
+    can_edit: Optional[bool] = None,
+    contribution_description: Optional[str] = None,
+    contribution: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, str]:
+    """
+    Update a collaborator's permissions on a project.
+    """
+    # Verify requesting user has edit rights
+    await verify_edit_permission(project_id, current_user, db)
+
+    # Get the collaborator user
+    collaborator = await get_user_by_username(username, db)
+
+    # Get the existing association
+    result = await db.execute(
+        select(UserProjectAssociation).filter(
+            UserProjectAssociation.user_id == collaborator.id,
+            UserProjectAssociation.project_id == project_id,
+        )
+    )
+    association = result.scalars().first()
+
+    if not association:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This user is not a collaborator on the project",
+        )
+
+    # Update fields if provided
+    if role is not None:
+        association.role = role
+    if can_edit is not None:
+        association.can_edit = can_edit
+    if contribution_description is not None:
+        association.contribution_description = contribution_description
+    if contribution is not None:
+        association.contribution = contribution
+
+    association.updated_at = datetime.now()
+    await db.commit()
+
+    return {"message": "Collaborator permissions updated successfully"}
+
+
+async def get_recent_projects(
+    days: int = 30,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Sequence[PortfolioProjectBase]:
+    """
+    Get recently created or updated projects.
+    """
+    cutoff_date = datetime.now() - timedelta(days=days)
+
+    query = (
+        select(PortfolioProject)
+        .join(UserProjectAssociation)
+        .filter(
+            UserProjectAssociation.user_id == current_user.id,
+            or_(
+                PortfolioProject.created_at >= cutoff_date,
+                PortfolioProject.updated_at >= cutoff_date,
+            ),
+        )
+        .order_by(
+            coalesce(PortfolioProject.updated_at, PortfolioProject.created_at).desc()
+        )
+        .limit(limit)
+    )
+
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def get_project_stats(
+    user_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    Get statistics about projects (counts by status, visibility, etc.)
+    """
+    # Use current user if no user_id provided
+    target_user_id = user_id if user_id else current_user.id
+
+    # Verify requesting user has access (either self or public stats)
+    if user_id and user_id != current_user.id:
+        if not await db.scalar(
+            select(User.is_public_profile).filter(User.id == user_id)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="User profile is private"
+            )
+
+    # Build the stats query with coalesce to handle NULL values
+    stats_query = (
+        select(
+            func.count().label("total_projects"),
+            func.coalesce(
+                func.sum(case((PortfolioProject.is_public == True, 1), else_=0)), 0
+            ).label("public_projects"),
+            func.coalesce(
+                func.sum(case((PortfolioProject.is_completed == True, 1), else_=0)), 0
+            ).label("completed_projects"),
+            func.coalesce(
+                func.sum(case((PortfolioProject.is_concept == True, 1), else_=0)), 0
+            ).label("concept_projects"),
+        )
+        .select_from(PortfolioProject)
+        .join(UserProjectAssociation)
+        .filter(
+            UserProjectAssociation.user_id == target_user_id,
+            UserProjectAssociation.role == "owner",
+        )
+    )
+
+    result = await db.execute(stats_query)
+    stats = result.mappings().first() or {}  # Fallback to empty dict if None
+
+    return {
+        "total_projects": stats.get("total_projects", 0),
+        "public_projects": stats.get("public_projects", 0),
+        "private_projects": stats.get("total_projects", 0)
+        - stats.get("public_projects", 0),
+        "completed_projects": stats.get("completed_projects", 0),
+        "active_projects": stats.get("total_projects", 0)
+        - stats.get("completed_projects", 0),
+        "concept_projects": stats.get("concept_projects", 0),
+    }

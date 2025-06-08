@@ -135,8 +135,11 @@ class PortfolioProject(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     project_name = Column(String, nullable=False)
-    project_description = Column(String, nullable=False)
+    project_description = Column(String, nullable=True)
+    project_category = Column(String, nullable=True)
     project_url = Column(String, nullable=True)
+    is_completed = Column(Boolean, nullable=True, default=False)
+    is_concept = Column(Boolean, nullable=True, default=False)
     project_image_url = Column(String, nullable=True)
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -468,7 +471,8 @@ class UserProjectAssociation(Base):
         primary_key=True,
     )
     role = Column(String, nullable=True)
-    contribution_description = Column(String, nullable=True)
+    contribution = Column(String, nullable=True)
+    contribution_description = Column(Text, nullable=True)
     can_edit = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
