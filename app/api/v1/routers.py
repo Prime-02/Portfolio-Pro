@@ -5,6 +5,9 @@ from .endpoints import skills
 from .endpoints import socials
 from .endpoints import cert
 from .endpoints import projects
+from .endpoints import portfolioprojectassociation
+from .endpoints import portfolio
+from .endpoints import projectaudit
 
 router = APIRouter()
 router.include_router(auth.router)
@@ -13,3 +16,6 @@ router.include_router(skills.router)
 router.include_router(socials.router)
 router.include_router(cert.router)
 router.include_router(projects.router)
+router.include_router(portfolioprojectassociation.router)
+router.include_router(portfolio.router)
+router.include_router(projectaudit.router)

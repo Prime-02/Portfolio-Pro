@@ -1,3 +1,64 @@
+"""
+Certification Management Routes
+
+This module provides API endpoints for managing professional certifications.
+All routes require authentication.
+
+Routes:
+
+1. POST /certification/
+   - Summary: Add a new certification
+   - Description: Creates a new certification record for the authenticated user
+   - Required Fields:
+     - certification_name: str
+     - issuing_organization: str
+   - Optional Fields:
+     - issue_date: datetime
+     - expiration_date: datetime
+   - Returns: The created certification with generated ID
+
+2. GET /certification/
+   - Summary: Get all certifications
+   - Description: Retrieves all certifications for the current user
+   - Returns: List of certification objects
+
+3. GET /certification/{cert_id}
+   - Summary: Get specific certification
+   - Description: Retrieves a single certification by its ID
+   - Path Parameters:
+     - cert_id: UUID of the certification
+   - Returns: Complete certification details
+
+4. PUT /certification/{cert_id}
+   - Summary: Update a certification
+   - Description: Modifies an existing certification
+   - Path Parameters:
+     - cert_id: UUID of the certification to update
+   - Updatable Fields:
+     - certification_name
+     - issuing_organization
+     - issue_date
+     - expiration_date
+   - Returns: Updated certification details
+
+5. DELETE /certification/{cert_id}
+   - Summary: Delete a certification
+   - Description: Permanently removes a certification
+   - Path Parameters:
+     - cert_id: UUID of the certification to delete
+   - Returns: Success message
+
+Authentication:
+- All routes require valid JWT token
+- Users can only access/modify their own certifications
+
+Error Responses:
+- 401 Unauthorized: Missing or invalid credentials
+- 403 Forbidden: Attempt to access/modify another user's certification
+- 404 Not Found: Certification doesn't exist or not accessible
+"""
+
+
 from fastapi import APIRouter, status, Depends, HTTPException
 from typing import Dict, Union, List
 from app.models.schemas import (

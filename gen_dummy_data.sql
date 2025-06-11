@@ -284,14 +284,13 @@ BEGIN
     v_user_id,
     v_project_id,
     CASE j
-        WHEN 1 THEN 'Lead Developer'
-        WHEN 2 THEN 'Designer'
-        ELSE 'Contributor'
+        WHEN 1 THEN 'owner'
+        ELSE 'contributor'
     END,
     CASE j
-        CASE j
-        WHEN 1 THEN 'Owner'
-        ELSE 'Contributor'
+        WHEN 1 THEN 'Lead Developer'
+        WHEN 2 THEN 'Designer'
+        ELSE 'Project Manager'
     END,
     CASE j
         WHEN 1 THEN 'Implemented core functionality and database design'
@@ -316,38 +315,39 @@ END LOOP;
             );
         END IF;
         
-         -- Add project likes (20-50% of projects get likes)
-        IF i%4 != 0 THEN
-            FOR j IN 1..(1 + (i%5)) LOOP
-                INSERT INTO portfolio_pro_app.project_likes (
-                    id, project_id, user_id, created_at
-                ) VALUES (
-                    gen_random_uuid(),
-                    v_project_id,
-                    (SELECT id FROM portfolio_pro_app.users WHERE id != v_user_id ORDER BY random() LIMIT 1),
-                    NOW() - (random() * INTERVAL '90 days')
-                );
-            END LOOP;
-        END IF;
-       -- Add project comments (30% of projects get comments)
-        IF i%3 = 0 THEN
-            FOR j IN 1..(1 + (i%4)) LOOP
-                INSERT INTO portfolio_pro_app.project_comments (
-                    id, project_id, user_id, content, created_at
-                ) VALUES (
-                    gen_random_uuid(),
-                    v_project_id,
-                    (SELECT id FROM portfolio_pro_app.users WHERE id != v_user_id ORDER BY random() LIMIT 1),
-                    CASE j
-                        WHEN 1 THEN 'Great work on this project! The design is really clean.'
-                        WHEN 2 THEN 'I would love to collaborate on something similar.'
-                        WHEN 3 THEN 'How did you solve the performance issues?'
-                        ELSE 'Impressive results!'
-                    END,
-                    NOW() - (random() * INTERVAL '80 days')
-                );
-            END LOOP;
-        END IF;
+        -- Add project likes (20-50% of projects get likes)
+IF i%4 != 0 THEN
+    FOR j IN 1..(1 + (i%5)) LOOP
+        INSERT INTO portfolio_pro_app.project_likes (
+            id, project_id, user_id, created_at
+        ) VALUES (
+            gen_random_uuid(),
+            v_project_id,
+            (SELECT id FROM portfolio_pro_app.users WHERE id != v_user_id ORDER BY random() LIMIT 1),
+            NOW() - (random() * INTERVAL '90 days')
+        );
+    END LOOP;
+END IF;
+
+-- Add project comments (30% of projects get comments)
+IF i%3 = 0 THEN
+    FOR j IN 1..(1 + (i%4)) LOOP
+        INSERT INTO portfolio_pro_app.project_comments (
+            id, project_id, user_id, content, created_at
+        ) VALUES (
+            gen_random_uuid(),
+            v_project_id,
+            (SELECT id FROM portfolio_pro_app.users WHERE id != v_user_id ORDER BY random() LIMIT 1),
+            CASE j
+                WHEN 1 THEN 'Great work on this project! The design is really clean.'
+                WHEN 2 THEN 'I would love to collaborate on something similar.'
+                WHEN 3 THEN 'How did you solve the performance issues?'
+                ELSE 'Impressive results!'
+            END,
+            NOW() - (random() * INTERVAL '80 days')
+        );
+    END LOOP;
+END IF;
     END LOOP;
     
     -- Generate testimonials (about 1 per 2 users)
@@ -654,3 +654,5 @@ BEGIN
     RETURN v_user_id;
 END;
 $$ LANGUAGE plpgsql;
+
+--SELECT generate_portfolio_dummy_data(10);  -- Generates 10 rows per table

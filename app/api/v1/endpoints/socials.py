@@ -1,3 +1,85 @@
+"""
+Social Links API Router
+=======================
+
+This module provides API endpoints to manage social media links for authenticated users.
+It allows users to create, retrieve, update, and delete their social profile URLs on platforms
+like Twitter, LinkedIn, GitHub, etc.
+
+Endpoints
+---------
+
+1. POST `/socials/`
+    - Summary: Add a new social link.
+    - Description: Creates a new social link associated with the authenticated user.
+    - Request Body:
+        - platform_name (str): Name of the social platform (e.g., Twitter, LinkedIn). **Required**.
+        - profile_url (str): The full URL to the user's profile on the specified platform. **Required**.
+    - Response: The created social link object.
+    - Status Codes:
+        - 201: Created successfully.
+        - 400: Invalid input.
+
+2. GET `/socials/`
+    - Summary: Get all social links.
+    - Description: Retrieves a list of all social links belonging to the authenticated user.
+    - Response: List of social link objects.
+    - Status Codes:
+        - 200: Success.
+        - 401: Unauthorized (if not authenticated).
+
+3. GET `/socials/{social_id}`
+    - Summary: Get a specific social link.
+    - Description: Fetches a social link by its UUID. Ensures the link belongs to the current user.
+    - Path Parameters:
+        - social_id (UUID): The ID of the social link to retrieve.
+    - Response: The requested social link object.
+    - Status Codes:
+        - 200: Success.
+        - 404: Not found (if the link doesn't exist or doesn’t belong to the user).
+
+4. PUT `/socials/{social_id}`
+    - Summary: Update a social link.
+    - Description: Updates an existing social link with new data such as a new platform name or profile URL.
+    - Path Parameters:
+        - social_id (UUID): The ID of the social link to update.
+    - Request Body:
+        - platform_name (str, optional): Updated platform name.
+        - profile_url (str, optional): Updated profile URL.
+    - Response: The updated social link object.
+    - Status Codes:
+        - 200: Updated successfully.
+        - 404: Not found or access denied.
+
+5. DELETE `/socials/{social_id}`
+    - Summary: Delete a social link.
+    - Description: Deletes a social link belonging to the authenticated user.
+    - Path Parameters:
+        - social_id (UUID): The ID of the social link to delete.
+    - Response: A message indicating whether the deletion was successful.
+    - Status Codes:
+        - 200: Deleted successfully.
+        - 404: Not found or access denied.
+
+Security
+--------
+All endpoints require authentication via a valid JWT token.
+The current user is resolved using the `get_current_user` dependency.
+
+Models
+------
+- `SocialLinksCreate`: Schema used for creating new social links.
+- `SocialLinksBase`: Schema used for reading/displaying social links.
+- `SocialLinksUpdate`: Schema used for updating existing links.
+
+Dependencies
+------------
+- `get_current_user`: Retrieves the authenticated user from the request.
+- `get_db`: Provides an asynchronous SQLAlchemy database session.
+
+"""
+
+
 from fastapi import APIRouter, status, Depends
 from typing import Dict, Union, List
 from app.models.schemas import (

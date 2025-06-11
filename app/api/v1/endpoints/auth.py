@@ -1,3 +1,97 @@
+"""
+Authentication and User Management API
+
+This module provides endpoints for user authentication, account management, and device registration.
+All sensitive operations require authentication unless otherwise noted.
+
+Authentication Flow:
+1. User signs up via /auth/signup
+2. User logs in via /auth/login to get access token
+3. Token is used in Authorization header for protected routes
+
+Routes:
+
+AUTHENTICATION ENDPOINTS:
+
+1. POST /auth/login
+   - Summary: User login
+   - Description: Authenticates user and returns JWT access token
+   - Request Body:
+     - username: str (username or email)
+     - password: str
+     - grant_type: str (should be "password")
+   - Returns:
+     - access_token: JWT token for authorization
+     - token_type: "bearer"
+     - user_info: Basic user details
+
+2. POST /auth/signup
+   - Summary: User registration
+   - Description: Creates new user account
+   - Request Body:
+     - username: str (3-30 chars, specific format rules)
+     - email: valid email format
+     - password: str
+   - Returns: Newly created user details
+   - Auto-creates:
+     - Default user settings
+     - Welcome email
+
+PASSWORD RECOVERY:
+
+3. POST /auth/forgotten-password
+   - Summary: Initiate password reset
+   - Description: Sends password reset email if account exists
+   - Request Body:
+     - email: registered email address
+   - Returns: Generic success message (security purposes)
+
+4. POST /auth/reset-password
+   - Summary: Complete password reset
+   - Description: Sets new password using valid reset token
+   - Request Body:
+     - token: Valid password reset token
+     - new_password: str
+   - Returns: Success message
+
+DEVICE MANAGEMENT:
+
+5. POST /auth/register-device
+   - Summary: Register user device
+   - Description: Records new device for authenticated user
+   - Requires: Valid JWT token
+   - Request Body:
+     - device_name: str
+     - device_type: str
+   - Returns: Registered device details
+   - Triggers: Security notification email
+
+Security Features:
+- Password hashing (bcrypt)
+- JWT token expiration
+- Device registration alerts
+- Secure password reset flow
+- Username validation rules
+
+Error Responses:
+- 400 Bad Request: Invalid input data
+- 401 Unauthorized: Invalid credentials
+- 403 Forbidden: Insufficient permissions
+- 404 Not Found: Resource not found
+- 409 Conflict: Duplicate entry (username/email/device)
+
+Rate Limiting:
+- 5 requests/minute for sensitive endpoints
+- 20 requests/minute for other endpoints
+
+Email Notifications:
+- Account creation
+- Password changes
+- New device registration
+"""
+
+
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,7 +169,7 @@ async def forgotten_password(
     """
     # Check if user exists
     result = await db.execute(
-        select(User).where(cast(User.email == request.email, Boolean) == True)
+        select(User).where(User.email == request.email)
     )
     user = result.scalar_one_or_none()
 
@@ -119,7 +213,7 @@ async def reset_password(
 
     # Update user password
     result = await db.execute(
-        select(User).where(cast(User.email == email, Boolean) == True)
+        select(User).where(User.email == email)
     )
     user = result.scalar_one_or_none()
 
@@ -189,8 +283,8 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
     result = await db.execute(
         select(User).where(
             or_(
-                cast(User.email == user.email, Boolean) == True,
-                cast(User.username == user.username, Boolean) == True,
+                User.email == user.email,
+                User.username == user.username,
             )
         )
     )
@@ -214,6 +308,7 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
         hashed_password=get_password_hash(user.password),
         is_active=True,
         role="user",
+        is_superuser=False
     )
     db.add(db_user)
     await db.flush()

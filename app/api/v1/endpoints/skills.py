@@ -1,3 +1,68 @@
+"""
+Professional Skills API Router
+
+This module provides CRUD (Create, Read, Update, Delete) operations for managing professional skills
+through a FastAPI interface. The router is protected by OAuth2 authentication and requires a valid
+access token for all operations.
+
+Routes:
+    POST /skills/ - Create a new professional skill
+    GET /skills/ - Get all professional skills for the authenticated user
+    GET /skills/{skill_id} - Get a specific professional skill by ID
+    PUT /skills/{skill_id} - Update an existing professional skill
+    DELETE /skills/{skill_id} - Delete a professional skill
+
+Dependencies:
+    - OAuth2PasswordBearer: For handling OAuth2 token authentication
+    - AsyncSession: For asynchronous database operations
+    - get_current_user: For retrieving the authenticated user from the token
+
+Models:
+    - ProfessionalSkillsCreate: Pydantic model for skill creation
+    - ProfessionalSkillsBase: Base Pydantic model for skill representation
+    - ProfessionalSkillsUpdate: Pydantic model for skill updates
+
+The router uses an asynchronous database session and requires all operations to be performed by
+an authenticated user. Each skill is associated with the user who created it.
+
+Security:
+    All endpoints require authentication via OAuth2 bearer token. The token should be included
+    in the Authorization header as: 'Bearer {token}'
+
+Error Responses:
+    - 401 Unauthorized: If no valid token is provided
+    - 403 Forbidden: If user tries to access/modify skills they don't own
+    - 404 Not Found: If a skill with the specified ID doesn't exist
+    - 422 Unprocessable Entity: If request data validation fails
+
+Example Usage:
+    # Create a new skill
+    POST /skills/
+    Headers: Authorization: Bearer {access_token}
+    Body: {"skill_name": "Python", "proficiency_level": "Advanced"}
+
+    # Get all skills
+    GET /skills/
+    Headers: Authorization: Bearer {access_token}
+
+    # Get specific skill
+    GET /skills/123e4567-e89b-12d3-a456-426614174000
+    Headers: Authorization: Bearer {access_token}
+
+    # Update a skill
+    PUT /skills/123e4567-e89b-12d3-a456-426614174000
+    Headers: Authorization: Bearer {access_token}
+    Body: {"proficiency_level": "Expert"}
+
+    # Delete a skill
+    DELETE /skills/123e4567-e89b-12d3-a456-426614174000
+    Headers: Authorization: Bearer {access_token}
+"""
+
+
+
+
+
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import APIRouter, status, Depends
 from typing import Dict, Union, List

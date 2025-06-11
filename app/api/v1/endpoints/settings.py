@@ -1,3 +1,69 @@
+"""
+User Settings and Profile Management Routes
+
+This module provides API endpoints for managing user settings, profile information,
+and account details. All routes require authentication.
+
+Routes:
+
+SETTINGS OPERATIONS:
+1. GET /settings/
+   - Summary: Retrieve user settings
+   - Description: Returns all settings for the authenticated user
+   - Response Model: DBSettings
+   - Returns: Complete user settings object
+
+2. PUT /settings/
+   - Summary: Update user settings
+   - Description: Modifies user settings with provided data (partial updates supported)
+   - Request Body: UserSettingsBase (all fields optional)
+   - Response Model: UserSettingsBase
+   - Returns: Updated settings object
+
+USER INFORMATION OPERATIONS:
+3. GET /settings/info
+   - Summary: Get user account information
+   - Description: Returns core account details (username, email, etc.)
+   - Response Model: UserUpdateRequest
+   - Returns: Complete user information object
+
+4. PUT /settings/info
+   - Summary: Update user account information
+   - Description: Modifies user account details (partial updates supported)
+   - Request Body: UserUpdateRequest (all fields optional)
+   - Response Model: UserUpdateRequest
+   - Returns: Updated user information
+
+PROFILE OPERATIONS:
+5. GET /settings/profile
+   - Summary: Get user profile
+   - Description: Returns public profile information (bio, social links, etc.)
+   - Response Model: UserProfileRequest
+   - Returns: Complete profile object
+
+6. PUT /settings/profile
+   - Summary: Update user profile
+   - Description: Creates or modifies public profile information
+   - Request Body: UserProfileRequest
+   - Response Model: UserProfileRequest
+   - Returns: Updated profile object
+
+Authentication:
+- All routes require valid JWT token in Authorization header
+- Token can be obtained from /auth/token endpoint
+
+Error Responses:
+- 401 Unauthorized: Missing or invalid credentials
+- 403 Forbidden: Insufficient permissions
+- 422 Unprocessable Entity: Invalid request data
+
+Request Behavior:
+- PUT endpoints support partial updates (omit unchanged fields)
+- All sensitive fields are automatically filtered from responses
+- Profile and settings are created automatically with default values if missing
+"""
+
+
 from fastapi import APIRouter, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from app.models.schemas import (

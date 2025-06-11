@@ -33,6 +33,7 @@ class User(Base):
     profile_picture = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     is_active = Column(Boolean, default=False)
+    is_superuser = Column(Boolean, default=False)
     is_visible = Column(Boolean, default=True)
     role = Column(String, default="user")
     hashed_password = Column(String)
@@ -86,6 +87,7 @@ class User(Base):
         self,
         email: str,
         username: str,
+        is_superuser: bool,
         hashed_password: str,
         firstname: str = "",
         middlename: str = "",
@@ -102,6 +104,7 @@ class User(Base):
         self.lastname = lastname
         self.hashed_password = hashed_password
         self.is_active = is_active
+        self.is_superuser = is_superuser
         self.is_visible = is_visible
         self.role = role
         self.id = id if id else uuid.uuid4()

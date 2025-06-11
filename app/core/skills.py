@@ -66,11 +66,11 @@ async def add_skill(
     await db.refresh(new_skill)
 
     return ProfessionalSkillsCreate(
-        id=uuid.UUID(str(skill_id)),
+        # id=uuid.UUID(str(skill_id)),
         user_id=uuid.UUID(str(user.id)),
         skill_name=str(new_skill.skill_name),
         proficiency_level=str(new_skill.proficiency_level),
-        created_at=datetime.fromisoformat(new_skill.created_at.isoformat()),
+        # created_at=datetime.fromisoformat(new_skill.created_at.isoformat()),
     )
 
 
@@ -85,10 +85,10 @@ async def get_all_skills(
 
     return [
         ProfessionalSkillsBase(
-            id=uuid.UUID(str(skill.id)),
+            # id=uuid.UUID(str(skill.id)),
             skill_name=str(skill.skill_name),
             proficiency_level=str(skill.proficiency_level),
-            created_at=datetime.fromisoformat(skill.created_at.isoformat()),
+            # created_at=datetime.fromisoformat(skill.created_at.isoformat()),
         )
         for skill in skills
     ]
@@ -112,10 +112,10 @@ async def get_skill_by_id(
         )
 
     return ProfessionalSkillsBase(
-        id=uuid.UUID(str(skill.id)),
+        # id=uuid.UUID(str(skill.id)),
         skill_name=str(skill.skill_name),
         proficiency_level=str(skill.proficiency_level),
-        created_at=datetime.fromisoformat(skill.created_at.isoformat()),
+        # created_at=datetime.fromisoformat(skill.created_at.isoformat()),
     )
 
 
@@ -161,10 +161,10 @@ async def update_skill(
     await db.refresh(skill)
 
     return ProfessionalSkillsBase(
-        id=uuid.UUID(str(skill.id)),
+        # id=uuid.UUID(str(skill.id)),
         skill_name=str(skill.skill_name),
         proficiency_level=str(skill.proficiency_level),
-        created_at=datetime.fromisoformat(skill.created_at.isoformat()),
+        # created_at=datetime.fromisoformat(skill.created_at.isoformat()),
     )
 
 

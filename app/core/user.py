@@ -18,6 +18,8 @@ from app.core.security import validate_username
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 import uuid
+import re
+import unicodedata
 
 
 async def get_common_params(
@@ -298,3 +300,22 @@ async def get_user_by_username(username: str, db: AsyncSession) -> User:
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return user
+
+
+def slugify(text: str) -> str:
+    # Normalize Unicode characters to ASCII
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+    
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove any character that is not alphanumeric, a space, or a hyphen
+    text = re.sub(r'[^a-z0-9\s-]', '', text)
+    
+    # Replace all runs of whitespace or hyphens with a single hyphen
+    text = re.sub(r'[\s-]+', '-', text)
+    
+    # Remove leading and trailing hyphens
+    text = text.strip('-')
+    
+    return text

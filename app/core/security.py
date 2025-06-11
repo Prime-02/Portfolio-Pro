@@ -178,8 +178,32 @@ async def get_current_active_user(
     Raises:
         HTTPException: 400 if user is inactive
     """
-    if bool(current_user.is_active):
-        raise HTTPException(status_code=400, detail="Inactive user")
+    if not current_user.is_active:  # Fixed the logic - was checking opposite before
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+        )
+    return current_user
+
+
+async def require_admin_role(
+    current_user: DBUser = Depends(get_current_active_user),
+) -> DBUser:
+    """
+    Dependency that requires the user to have admin role/superuser privileges.
+
+    Args:
+        current_user: Current active user
+
+    Returns:
+        The user if admin
+
+    Raises:
+        HTTPException: 403 if user is not admin
+    """
+    if not current_user.is_superuser:  # or whatever your admin flag is called
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
+        )
     return current_user
 
 
