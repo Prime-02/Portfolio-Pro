@@ -126,8 +126,7 @@ from app.core.security import (
 from app.config import settings
 from app.database import get_db
 from app.models.schemas import DBUser
-from sqlalchemy import cast, Boolean
-
+from uuid import UUID
 
 router = APIRouter(prefix="/auth", tags=["users"])
 
@@ -144,6 +143,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     user_info: Dict[str, Any]
+    id: Optional[UUID] = None
 
 
 class ForgottenPasswordRequest(BaseModel):
@@ -274,6 +274,7 @@ async def login_for_access_token(
             "email": str(user.email),
             "role": str(user.role),
         },
+        id=UUID(str(user.id))
     )
 
 

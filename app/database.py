@@ -4,6 +4,8 @@ from sqlalchemy.pool import NullPool
 from app.config import settings
 from typing import AsyncGenerator
 import logging
+from fastapi import Request
+
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,19 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+async def db_middleware(request: Request, call_next):
+    # Create a new session for each request
+    async with SessionLocal() as session:
+        request.state.db = session
+        try:
+            response = await call_next(request)
+        except Exception as e:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+    return response
 
 async def verify_schema_exists():
     """Verify that the required schema exists without attempting to create it"""

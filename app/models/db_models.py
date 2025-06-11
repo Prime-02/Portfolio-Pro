@@ -10,6 +10,7 @@ from sqlalchemy import (
     Index,
     JSON,
     UniqueConstraint,
+    Enum,
 )
 from sqlalchemy.sql import func
 from .base import Base
@@ -18,6 +19,9 @@ from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.associationproxy import association_proxy
+import enum
+from sqlalchemy.dialects.postgresql import ENUM
+
 
 
 class User(Base):
@@ -81,6 +85,11 @@ class User(Base):
         "Testimonial",
         foreign_keys="[Testimonial.author_user_id]",
         viewonly=True,
+    )
+    notifications = relationship(
+        "Notification",
+        foreign_keys="[Notification.user_id]",  # Explicitly use user_id as the foreign key
+        back_populates="user",
     )
 
     def __init__(
@@ -552,3 +561,37 @@ class ProjectAudit(Base):
 
     project = relationship("PortfolioProject", back_populates="audit_logs")
     user = relationship("User")
+
+
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        Index("idx_notification_user_unread", "user_id", "is_read"),
+        Index("idx_notification_created", "created_at"),
+        {"schema": "portfolio_pro_app"},  # Add this line
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID, ForeignKey("portfolio_pro_app.users.id"), nullable=False
+    )  # Add schema prefix
+    actor_id = Column(
+        UUID, ForeignKey("portfolio_pro_app.users.id"), nullable=True
+    )  # Add schema prefix
+    message = Column(String(255), nullable=False)
+    notification_type = Column(
+        String(20),  # Adjust length as needed
+        default='alert',
+        nullable=False
+    )
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+    read_at = Column(DateTime, nullable=True)
+    meta_data = Column(JSON, nullable=True)
+    action_url = Column(String(512), nullable=True)
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], back_populates="notifications")
+    actor = relationship("User", foreign_keys=[actor_id])

@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, Json
 from typing import Optional, List, Union
 from datetime import datetime, date
 from uuid import UUID
+from enum import Enum
 
 
 class UserBase(BaseModel):
@@ -637,6 +638,52 @@ class ProjectAudit(ProjectAuditBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class NotificationType(str, Enum):
+    ALERT = "alert"
+    MESSAGE = "message"
+    SYSTEM = "system"
+
+
+class NotificationBase(BaseModel):
+    message: str = Field(..., max_length=255)
+    notification_type: NotificationType = Field(default=NotificationType.ALERT)
+    action_url: Optional[str] = Field(None, max_length=512)
+
+
+class NotificationCreate(NotificationBase):
+    # user_id: Optional[UUID] = None  # Or int if using integer IDs
+    actor_id: Optional[UUID] = None
+    meta_data: Optional[Json] = Field(None)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "message": "Alice liked your post",
+                "notification_type": "alert",
+                "meta_data": {"post_id": 123, "like_id": 456},
+                "action_url": "/posts/123",
+            }
+        }
+
+
+class NotificationUpdate(BaseModel):
+    is_read: bool = Field(True, description="Toggle read status")
+
+
+class NotificationOut(NotificationBase):
+    id: UUID
+    user_id: Optional[UUID]
+    actor_id: Optional[UUID]
+    is_read: bool
+    created_at: datetime
+    read_at: Optional[datetime]
+    meta_data: Optional[dict]  # JSON parsed to dict
+
+    class Config:
+        orm_mode = True  # Enable ORM compatibility
 
 
 # Rebuild models to resolve forward references
