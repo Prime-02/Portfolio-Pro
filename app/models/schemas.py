@@ -434,6 +434,8 @@ class CustomSectionItem(CustomSectionItemBase):
 
 # Education Schemas
 class EducationBase(BaseModel):
+    user_id: Optional[UUID] = None
+    id: Optional[UUID] = None
     institution: str
     degree: str
     field_of_study: Optional[str] = None
@@ -446,7 +448,7 @@ class EducationBase(BaseModel):
 
 
 class EducationCreate(EducationBase):
-    user_id: UUID
+    user_id: Optional[UUID] = None
 
 
 class EducationUpdate(BaseModel):
@@ -459,15 +461,12 @@ class EducationUpdate(BaseModel):
     description: Optional[str] = None
 
 
-class Education(EducationBase):
-    id: UUID
-    user_id: UUID
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 # Content Block Schemas
 class ContentBlockBase(BaseModel):
+    id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
     block_type: str  # 'about', 'services', 'process', 'fun_facts'
     title: Optional[str] = None
     content: str
@@ -478,7 +477,7 @@ class ContentBlockBase(BaseModel):
 
 
 class ContentBlockCreate(ContentBlockBase):
-    user_id: UUID
+    pass
 
 
 class ContentBlockUpdate(BaseModel):
@@ -488,13 +487,7 @@ class ContentBlockUpdate(BaseModel):
     position: Optional[int] = None
     is_visible: Optional[bool] = None
 
-
-class ContentBlock(ContentBlockBase):
-    id: UUID
-    user_id: UUID
-
-    model_config = ConfigDict(from_attributes=True)
-
+    
 
 # Testimonial Schemas
 class TestimonialBase(BaseModel):

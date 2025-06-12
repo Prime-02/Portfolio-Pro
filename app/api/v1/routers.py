@@ -10,6 +10,8 @@ from .endpoints import portfolio
 from .endpoints import projectaudit
 from .endpoints import notification
 from .endpoints import projectengagements
+from .endpoints import education
+from .endpoints import contentblock
 
 router = APIRouter()
 router.include_router(auth.router)
@@ -23,3 +25,5 @@ router.include_router(portfolio.router)
 router.include_router(projectaudit.router)
 router.include_router(notification.router)
 router.include_router(projectengagements.router)
+router.include_router(education.router)
+router.include_router(contentblock.router)
