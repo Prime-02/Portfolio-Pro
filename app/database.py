@@ -15,8 +15,8 @@ engine = create_async_engine(
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=False,  # Disabled as we have proper connection handling
-    pool_recycle=3600,    # Recycle connections after 1 hour
-    pool_timeout=30,      # Wait 30 seconds for a connection
+    pool_recycle=3600,  # Recycle connections after 1 hour
+    pool_timeout=30,  # Wait 30 seconds for a connection
     echo=settings.ENVIRONMENT == "development",  # Only echo in development
     future=True,
 )
@@ -32,6 +32,7 @@ SessionLocal = async_sessionmaker(
 
 Base = declarative_base()
 
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Async dependency that provides a database session"""
     async with SessionLocal() as session:
@@ -44,30 +45,23 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         finally:
             await session.close()
 
-async def db_middleware(request: Request, call_next):
-    # Create a new session for each request
-    async with SessionLocal() as session:
-        request.state.db = session
-        try:
-            response = await call_next(request)
-        except Exception as e:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-    return response
 
 async def verify_schema_exists():
     """Verify that the required schema exists without attempting to create it"""
-    if 'postgresql' in settings.DATABASE_URL:
+    if "postgresql" in settings.DATABASE_URL:
         from sqlalchemy import text
+
         try:
             async with engine.begin() as conn:
                 result = await conn.execute(
-                    text("SELECT 1 FROM information_schema.schemata WHERE schema_name = 'portfolio_pro_app'")
+                    text(
+                        "SELECT 1 FROM information_schema.schemata WHERE schema_name = 'portfolio_pro_app'"
+                    )
                 )
                 if not result.scalar():
-                    logger.warning("Schema 'portfolio_pro_app' does not exist. Run migrations first.")
+                    logger.warning(
+                        "Schema 'portfolio_pro_app' does not exist. Run migrations first."
+                    )
         except Exception as e:
             logger.error(f"Schema verification failed: {e}")
             raise

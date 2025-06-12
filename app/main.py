@@ -4,8 +4,7 @@ from app.api.v1.routers import router as v1_router
 from app.database import engine, verify_schema_exists
 from app.config import settings
 import logging
-from app.database import db_middleware
-from app.middlewares.middlewares import NotificationAuditMiddleware
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,9 +31,7 @@ def create_application() -> FastAPI:
         lifespan=lifespan
     )
      # Add database middleware FIRST
-    app.middleware("http")(db_middleware)
     app.include_router(v1_router, prefix="/api/v1")
-    app.add_middleware(NotificationAuditMiddleware)
 
     @app.get("/")
     async def root():

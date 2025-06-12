@@ -92,16 +92,16 @@ Email Notifications:
 
 
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_
 from app.database import get_db
 from app.core import get_password_hash
-from app.models.schemas import DBUser, UserCreate, UserDevicesRequest
+from app.models.schemas import DBUser, UserCreate, UserDevicesRequest, NotificationCreate
 from sqlalchemy import cast, Boolean
-from typing import Annotated, Dict, Any, Optional
+from typing import Annotated, Dict, Any, Optional, Union
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
@@ -115,7 +115,8 @@ from app.core.security import (
 from datetime import timedelta
 from app.models.db_models import User, UserSettings, UserDevices
 from app.services.gmail_utils import send_email
-
+from app.core.corenotification import create_notification
+from datetime import datetime
 
 from app.core.security import (
     authenticate_user,
@@ -159,34 +160,111 @@ class DBUserId(DBUser):
     id: Optional[int] = None
 
 
+async def get_common_params(
+    data: Dict[str, Union[str, bool, datetime]],
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return {"data": data, "user": user, "db": db}
+
+
+from datetime import datetime
+from typing import Dict, Any, Optional
+from fastapi import Request
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.db_models import User
+
+async def create_user_notification(
+    user: User,
+    db: AsyncSession,
+    message: str,
+    notification_type: str,
+    action_url: Optional[str] = None,
+    meta_data: Optional[Dict[str, Any]] = None,
+    request: Optional[Request] = None
+):
+    """Helper function to create user notifications with optional request context"""
+    
+    # Get client info if request is provided
+    client_ip = "unknown"
+    user_agent = "unknown"
+    
+    if request and request.client:
+        client_ip = request.client.host
+        user_agent = request.headers.get("user-agent", "unknown")
+    
+    # Prepare metadata
+    notification_meta = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "ip_address": client_ip,
+        "user_agent": user_agent,
+    }
+    
+    if meta_data:
+        notification_meta.update(meta_data)
+    
+    # Pass the dictionary directly to NotificationCreate (don't convert to JSON string)
+    notification_data = NotificationCreate(
+        message=message,
+        notification_type=notification_type,
+        action_url=action_url,
+        meta_data=notification_meta  # Pass dictionary directly
+    )
+
+    commons = {
+        "user": user,
+        "db": db,
+        "data": notification_data
+    }
+    
+    await create_notification(commons)
+
+
 @router.post("/forgotten-password", status_code=status.HTTP_200_OK)
 async def forgotten_password(
-    request: ForgottenPasswordRequest,
+    request: Request,
+    password_request: ForgottenPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """
     Initiate password reset process for a user.
+    Creates a security notification about the password reset request.
     """
     # Check if user exists
     result = await db.execute(
-        select(User).where(User.email == request.email)
+        select(User).where(User.email == password_request.email)
     )
     user = result.scalar_one_or_none()
 
     if not user:
-        # Don't reveal whether user exists for security reasons
+        # Security: Don't reveal whether user exists
         return {
             "message": "If this email is registered, you'll receive a password reset link"
         }
 
     # Generate password reset token
     reset_token = generate_password_reset_token(email=str(user.email))
+    reset_link = f"https://www.lawchecks.com/reset-password?token={reset_token}"
 
     # Send password reset email
     send_email(
         to=str(user.email),
-        subject=f"Password Reset Request",
-        body=f"Follow the link: https://www.lawchecks.com/{reset_token}/reset-password to reset your password.",
+        subject="Password Reset Request",
+        body=f"Click to reset your password: {reset_link}",
+    )
+
+    # Create security notification
+    await create_user_notification(
+        user=user,
+        db=db,
+        message="Password reset requested",
+        notification_type="security",
+        action_url="/account/security",
+        meta_data={
+            "event": "password_reset_request",
+            "reset_link": reset_link
+        },
+        request=request
     )
 
     return {
@@ -196,14 +274,16 @@ async def forgotten_password(
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
 async def reset_password(
-    request: PasswordResetRequest,
+    password_request: PasswordResetRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """
     Complete password reset process using the provided token.
+    Creates notifications for successful password reset.
     """
-    # Verify token and get email (implementation depends on your token system)
-    token_payload = await verify_token(str(request.token))
+    # Verify token and get email
+    token_payload = await verify_token(str(password_request.token))
     if not token_payload or "sub" not in token_payload:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -211,7 +291,7 @@ async def reset_password(
         )
     email = str(token_payload["sub"])
 
-    # Update user password
+    # Get user
     result = await db.execute(
         select(User).where(User.email == email)
     )
@@ -223,8 +303,29 @@ async def reset_password(
             detail="User not found",
         )
 
-    user.hashed_password = get_password_hash(request.new_password)
+    # Update user password
+    user.hashed_password = get_password_hash(password_request.new_password)
     await db.commit()
+
+    # Send confirmation email
+    send_email(
+        to=str(user.email),
+        subject="Password Reset Successful",
+        body=f"Hi {user.username}, your password has been successfully reset. If you didn't make this change, please contact our support team immediately.",
+    )
+
+    # Create success notification
+    await create_user_notification(
+        user=user,
+        db=db,
+        message="Password successfully reset",
+        notification_type="security",
+        action_url="/account/security",
+        meta_data={
+            "event": "password_reset_success"
+        },
+        request=request
+    )
 
     return {"message": "Password updated successfully"}
 
@@ -232,8 +333,13 @@ async def reset_password(
 @router.post("/login", response_model=TokenResponse)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
+    """
+    User login endpoint with comprehensive notifications.
+    Creates notifications for successful logins and security events.
+    """
     # Authenticate user
     user: DBUser | None = await authenticate_user(
         db=db,
@@ -242,6 +348,8 @@ async def login_for_access_token(
     )
 
     if user is None:
+        # For failed login attempts, we could log this but won't create user notifications
+        # since we don't have a verified user context
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect details",
@@ -249,13 +357,19 @@ async def login_for_access_token(
         )
 
     # Type-safe active check
-    if not bool(user.is_active):  # Explicit conversion for type safety
+    if not bool(user.is_active):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user",
         )
 
-    # Token generation - fix the duplicate assignment
+    # Get full user object for notifications
+    result = await db.execute(
+        select(User).where(User.id == user.id)
+    )
+    full_user = result.scalar_one_or_none()
+
+    # Token generation
     access_token_expires = timedelta(days=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     exp_timestamp = get_expiration_timestamp(access_token_expires)
 
@@ -265,6 +379,27 @@ async def login_for_access_token(
     )
 
     access_token: str = create_access_token(data=token_data)
+
+    # Create login success notification
+    await create_user_notification(
+        user=full_user,
+        db=db,
+        message="Successful login to your account",
+        notification_type="security",
+        action_url="/account/security",
+        meta_data={
+            "event": "successful_login",
+            "login_method": "password"
+        },
+        request=request
+    )
+
+    # Send login notification email (optional - can be disabled in user settings)
+    send_email(
+        to=str(user.email),
+        subject="Login Notification",
+        body=f"Hi {user.username}, you successfully logged into your account. If this wasn't you, please secure your account immediately.",
+    )
 
     return TokenResponse(
         access_token=access_token,
@@ -279,7 +414,15 @@ async def login_for_access_token(
 
 
 @router.post("/signup", response_model=DBUser, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> DBUser:
+async def create_user(
+    user: UserCreate, 
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+) -> DBUser:
+    """
+    User registration endpoint with welcome notifications.
+    Creates account and sends welcome notifications and emails.
+    """
     # 1. Check existing user
     result = await db.execute(
         select(User).where(
@@ -296,6 +439,7 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email or username already registered",
         )
+    
     if not validate_username(user.username):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -314,6 +458,7 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
     db.add(db_user)
     await db.flush()
 
+    # 3. Create default settings
     db_settings = UserSettings(
         language="en",
         theme="light",
@@ -325,11 +470,42 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
     db.add(db_settings)
     await db.commit()
     await db.refresh(db_user)
+
+    # 4. Send welcome email
     send_email(
         to=str(user.email),
-        subject=f"We are happy to have you on board, {user.username}!",
-        body=f"Welcome to Portfolio Pro, Your account has been created successfully. You can now log in and start using our services.",
+        subject=f"Welcome to Portfolio Pro, {user.username}!",
+        body=f"Welcome to Portfolio Pro! Your account has been created successfully. You can now log in and start using our services. We're excited to have you on board!",
     )
+
+    # 5. Create welcome notification
+    await create_user_notification(
+        user=db_user,
+        db=db,
+        message="Welcome to Portfolio Pro! Your account has been created successfully.",
+        notification_type="info",
+        action_url="/dashboard",
+        meta_data={
+            "event": "account_created",
+            "signup_method": "email"
+        },
+        request=request
+    )
+
+    # 6. Create getting started notification
+    await create_user_notification(
+        user=db_user,
+        db=db,
+        message="Complete your profile setup to get the most out of Portfolio Pro",
+        notification_type="info",
+        action_url="/profile/setup",
+        meta_data={
+            "event": "profile_setup_reminder",
+            "action_required": True
+        },
+        request=request
+    )
+
     return DBUser.model_validate(db_user)
 
 
@@ -340,9 +516,14 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)) -> D
 )
 async def register_device(
     device: UserDevicesRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: DBUserId = Depends(get_current_user),
 ) -> UserDevicesRequest:
+    """
+    Device registration endpoint with security notifications.
+    Creates notifications for new device registrations and security alerts.
+    """
     # Check if the device already exists for this user
     existing_device_result = await db.execute(
         select(UserDevices).where(
@@ -358,20 +539,58 @@ async def register_device(
             detail="Device already registered for this user",
         )
 
+    # Get full user object for notifications
+    result = await db.execute(
+        select(User).where(User.id == current_user.id)
+    )
+    full_user = result.scalar_one_or_none()
+
     # Create new device
     new_device = UserDevices(
         device_name=device.device_name,
         device_type=device.device_type,
         user_id=current_user.id,
-        # Add any other device attributes here
     )
 
     db.add(new_device)
     await db.commit()
     await db.refresh(new_device)
+
+    # Send device registration email
     send_email(
         to=str(current_user.email),
-        subject=f"Device Registered Successfully",
-        body=f"A new device '{device.device_name}'was used to access your account.",
+        subject="New Device Registered",
+        body=f"Hi {current_user.username}, a new device '{device.device_name}' ({device.device_type}) has been registered to your account. If this wasn't you, please review your account security immediately.",
     )
+
+    # Create device registration notification
+    await create_user_notification(
+        user=full_user,
+        db=db,
+        message=f"New device '{device.device_name}' registered successfully",
+        notification_type="security",
+        action_url="/account/devices",
+        meta_data={
+            "event": "device_registered",
+            "device_name": device.device_name,
+            "device_type": device.device_type,
+            "device_id": str(new_device.id) if hasattr(new_device, 'id') else None
+        },
+        request=request
+    )
+
+    # Create security reminder notification
+    await create_user_notification(
+        user=full_user,
+        db=db,
+        message="Review your registered devices to ensure account security",
+        notification_type="info",
+        action_url="/account/devices",
+        meta_data={
+            "event": "security_reminder",
+            "context": "device_registration"
+        },
+        request=request
+    )
+
     return new_device

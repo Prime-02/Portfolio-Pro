@@ -73,7 +73,7 @@ async def get_notification(
     return notification
 
 
-@router.patch("/{notification_id}", response_model=NotificationOut)
+@router.put("/{notification_id}", response_model=NotificationOut)
 async def update_notification_endpoint(
     notification_id: UUID,
     update_data: NotificationUpdate,
@@ -127,7 +127,7 @@ async def mark_all_as_read_endpoint(
     return {"count": count, "message": f"Marked {count} notifications as read"}
 
 
-@router.delete("/delete-read")
+@router.delete("/delete/delete-read")
 async def delete_all_read_endpoint(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)

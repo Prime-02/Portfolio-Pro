@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, Json
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict, Any
 from datetime import datetime, date
 from uuid import UUID
 from enum import Enum
@@ -640,33 +640,16 @@ class ProjectAudit(ProjectAuditBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class NotificationType(str, Enum):
-    ALERT = "alert"
-    MESSAGE = "message"
-    SYSTEM = "system"
-
-
 class NotificationBase(BaseModel):
     message: str = Field(..., max_length=255)
-    notification_type: NotificationType = Field(default=NotificationType.ALERT)
+    notification_type: Optional[str] = "system"
     action_url: Optional[str] = Field(None, max_length=512)
 
 
 class NotificationCreate(NotificationBase):
     # user_id: Optional[UUID] = None  # Or int if using integer IDs
     actor_id: Optional[UUID] = None
-    meta_data: Optional[Json] = Field(None)
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "message": "Alice liked your post",
-                "notification_type": "alert",
-                "meta_data": {"post_id": 123, "like_id": 456},
-                "action_url": "/posts/123",
-            }
-        }
+    meta_data: Optional[Dict[str, Any]] = Field(None)
 
 
 class NotificationUpdate(BaseModel):

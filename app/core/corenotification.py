@@ -9,6 +9,7 @@ from app.models.schemas import NotificationCreate, NotificationUpdate, Notificat
 from datetime import datetime
 from app.database import get_db
 from app.core.security import get_current_user
+from sqlalchemy.orm import selectinload
 
 
 async def get_common_params(
@@ -29,12 +30,12 @@ async def create_notification(
     notification_data = commons["data"]
     user = commons["user"]
     db: AsyncSession = commons["db"]
-    
+
     try:
         # Ensure the notification is created for the authenticated user
         notification_dict = dict(notification_data)
         notification_dict["user_id"] = user.id
-        
+
         db_notification = Notification(**notification_dict)
         db.add(db_notification)
         await db.commit()
@@ -62,16 +63,15 @@ async def update_notification(
         # Query notification and ensure it belongs to the authenticated user
         result = await db.execute(
             select(Notification).where(
-                Notification.id == notification_id,
-                Notification.user_id == user.id
+                Notification.id == notification_id, Notification.user_id == user.id
             )
         )
         db_notification = result.scalar_one_or_none()
 
         if not db_notification:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Notification not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Notification not found or access denied",
             )
 
         # Update fields
@@ -106,8 +106,7 @@ async def delete_notification(
         # Query notification and ensure it belongs to the authenticated user
         result = await db.execute(
             select(Notification).where(
-                Notification.id == notification_id,
-                Notification.user_id == user.id
+                Notification.id == notification_id, Notification.user_id == user.id
             )
         )
         db_notification = result.scalar_one_or_none()
@@ -129,7 +128,7 @@ async def delete_notification(
 async def mark_all_as_read(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> int:
+) -> None:
     """Mark all notifications as read for the authenticated user. Returns count updated."""
     try:
         # Use the authenticated user's ID
@@ -140,7 +139,6 @@ async def mark_all_as_read(
         )
         result = await db.execute(stmt)
         await db.commit()
-        return result.rowcount or 0
     except SQLAlchemyError as e:
         await db.rollback()
         raise HTTPException(
@@ -152,17 +150,15 @@ async def mark_all_as_read(
 async def delete_all_read(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> int:
+) -> None:
     """Delete all read notifications for the authenticated user. Returns count deleted."""
     try:
         # Use the authenticated user's ID
         stmt = delete(Notification).where(
-            Notification.user_id == user.id, 
-            Notification.is_read == True
+            Notification.user_id == user.id, Notification.is_read == True
         )
         result = await db.execute(stmt)
         await db.commit()
-        return result.rowcount or 0
     except SQLAlchemyError as e:
         await db.rollback()
         raise HTTPException(
@@ -181,39 +177,46 @@ async def get_notification_with_relations(
     Returns None if not found or not owned by user.
     """
     try:
-        # Query notification and ensure it belongs to the authenticated user
+        # Query notification with relationships loaded
         result = await db.execute(
-            select(Notification).where(
-                Notification.id == notification_id,
-                Notification.user_id == user.id
-            )
-        )
+            select(Notification)
+            .where(Notification.id == notification_id, Notification.user_id == user.id)
+            .options(selectinload(Notification.actor))
+        )  # Eager load relationship
         notification = result.scalar_one_or_none()
 
         if not notification:
             return None
 
+        # Build response dictionary safely
         notification_dict = {
-            **notification.__dict__,
+            "id": str(notification.id),
+            "message": notification.message,
+            "notification_type": notification.notification_type,
+            "created_at": notification.created_at.isoformat(),
+            # Include other direct fields you need
             "actor": None,
             "related_entity": None,
         }
 
-        # Resolve actor (example)
-        if notification.actor_id:
-            actor_result = await db.execute(
-                select(User).where(User.id == notification.actor_id)
-            )
-            actor = actor_result.scalar_one_or_none()
-            notification_dict["actor"] = (
-                {"id": actor.id, "username": actor.username} if actor else None
-            )
+        # Handle actor relationship
+        if notification.actor:
+            notification_dict["actor"] = {
+                "id": str(notification.actor.id),
+                "username": notification.actor.username,
+            }
 
         return notification_dict
+
     except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch notification with relations: {str(e)}",
+            detail=f"Database error: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
         )
 
 

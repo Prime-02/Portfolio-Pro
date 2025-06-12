@@ -9,6 +9,7 @@ from .endpoints import portfolioprojectassociation
 from .endpoints import portfolio
 from .endpoints import projectaudit
 from .endpoints import notification
+from .endpoints import projectengagements
 
 router = APIRouter()
 router.include_router(auth.router)
@@ -21,3 +22,4 @@ router.include_router(portfolioprojectassociation.router)
 router.include_router(portfolio.router)
 router.include_router(projectaudit.router)
 router.include_router(notification.router)
+router.include_router(projectengagements.router)
