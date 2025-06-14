@@ -497,7 +497,6 @@ class TestimonialBase(BaseModel):
     author_relationship: Optional[str] = None  # "Colleague", "Manager", "Client"
     content: str
     rating: Optional[int] = Field(None, ge=1, le=5)  # 1-5 scale with validation
-    is_approved: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -516,14 +515,6 @@ class TestimonialUpdate(BaseModel):
     rating: Optional[int] = Field(None, ge=1, le=5)
     is_approved: Optional[bool] = None
 
-
-class Testimonial(TestimonialBase):
-    id: UUID
-    user_id: UUID  # Who the testimonial is for
-    author_user_id: UUID  # Who created the testimonial
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 # User Project Association Schemas
@@ -667,3 +658,60 @@ ProjectComment.model_rebuild()
 PortfolioResponse.model_rebuild()
 PortfolioProjectResponse.model_rebuild()
 UserResponse.model_rebuild()
+
+
+# Base schemas
+class SuggestionBase(BaseModel):
+    title: str
+    description: str
+    status: Optional[str] = "pending"
+
+class SuggestionCommentBase(BaseModel):
+    content: str
+    parent_comment_id: Optional[UUID] = None
+
+class SuggestionVoteBase(BaseModel):
+    pass  # No fields needed for base as it's just user_id and suggestion_id
+
+
+class SuggestionCommentResponse(SuggestionCommentBase):
+    id: UUID
+    suggestion_id: UUID
+    user_id: UUID
+    user: DBUser
+    created_at: datetime
+    replies: List["SuggestionCommentResponse"] = []
+
+    class Config:
+        orm_mode = True
+
+class SuggestionVoteResponse(SuggestionVoteBase):
+    id: UUID
+    user_id: UUID
+    suggestion_id: UUID
+    created_at: datetime
+    user: DBUser
+
+    class Config:
+        orm_mode = True
+
+class SuggestionResponse(SuggestionBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: Optional[datetime]
+    user: DBUser
+    comments: List[SuggestionCommentResponse] = []
+    votes: List[SuggestionVoteResponse] = []
+
+    class Config:
+        orm_mode = True
+
+# Update this to handle recursive comments
+SuggestionCommentResponse.model_rebuild()
+
+# Update schemas (for PUT/PATCH requests)
+class SuggestionUpdate(BaseModel):
+    title: Optional[str]
+    description: Optional[str]
+    status: Optional[str]

@@ -24,7 +24,7 @@ from sqlalchemy.dialects.postgresql import ENUM
 
 
 
-class User(Base):
+class User(Base): #Done 
     __tablename__ = "users"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -91,6 +91,24 @@ class User(Base):
         foreign_keys="[Notification.user_id]",  # Explicitly use user_id as the foreign key
         back_populates="user",
     )
+    suggestions = relationship(
+        "Suggestion", 
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="Suggestion.created_at.desc()"
+    )
+    
+    suggestion_comments = relationship(
+        "SuggestionComment", 
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    
+    suggestion_votes = relationship(
+        "SuggestionVote", 
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     def __init__(
         self,
@@ -122,7 +140,7 @@ class User(Base):
         return f"<User(id={self.id}, email={self.email})>"
 
 
-class UserSettings(Base):
+class UserSettings(Base): #done 
     __tablename__ = "user_settings"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -141,7 +159,7 @@ class UserSettings(Base):
         return f"<UserSettings(id={self.id}, owner_id={self.owner_id})>"
 
 
-class PortfolioProject(Base):
+class PortfolioProject(Base): #done
     __tablename__ = "portfolio_projects"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -194,7 +212,7 @@ class PortfolioProject(Base):
         return f"<PortfolioProject(id={self.id}, project_name={self.project_name})>"
 
 
-class Portfolio(Base):
+class Portfolio(Base): #done
     __tablename__ = "portfolios"
     __table_args__ = (
         Index("idx_portfolio_user", "user_id"),
@@ -240,7 +258,7 @@ class Portfolio(Base):
         return f"{base_slug}-{str(uuid.uuid4())[:8]}"
 
 
-class PortfolioProjectAssociation(Base):
+class PortfolioProjectAssociation(Base): #done
     __tablename__ = "portfolio_project_associations"
     __table_args__ = (
         Index("idx_portfolio_project", "portfolio_id", "project_id"),
@@ -267,7 +285,7 @@ class PortfolioProjectAssociation(Base):
     project = relationship("PortfolioProject", back_populates="portfolio_associations")
 
 
-class UserProfile(Base):
+class UserProfile(Base): #done
     __tablename__ = "user_profile"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -293,7 +311,7 @@ class UserProfile(Base):
         return f"<UserProfile(id={self.id}, user_id={self.user_id})>"
 
 
-class ProfessionalSkills(Base):
+class ProfessionalSkills(Base): #done
     __tablename__ = "professional_skills"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -311,7 +329,7 @@ class ProfessionalSkills(Base):
         return f"<ProfessionalSkills(id={self.id}, user_id={self.user_id}, skill_name={self.skill_name})>"
 
 
-class SocialLinks(Base):
+class SocialLinks(Base): #done
     __tablename__ = "social_links"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -329,7 +347,7 @@ class SocialLinks(Base):
         return f"<SocialLinks(id={self.id}, user_id={self.user_id}, platform_name={self.platform_name})>"
 
 
-class Certification(Base):
+class Certification(Base): #done
     __tablename__ = "certifications"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -428,7 +446,7 @@ class ContentBlock(Base):
     user = relationship("User", back_populates="content_blocks")
 
 
-class Testimonial(Base):
+class Testimonial(Base): 
     __tablename__ = "testimonials"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -450,7 +468,7 @@ class Testimonial(Base):
     author = relationship("User", viewonly=True, foreign_keys=[author_user_id])
 
 
-class UserDevices(Base):
+class UserDevices(Base): #done
     __tablename__ = "user_devices"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -466,7 +484,7 @@ class UserDevices(Base):
         return f"<UserDevices(id={self.id}, user_id={self.user_id}, device_name={self.device_name})>"
 
 
-class UserProjectAssociation(Base):
+class UserProjectAssociation(Base): #done
     __tablename__ = "user_project_association"
     __table_args__ = (
         Index("idx_user_project_user_id", "user_id"),
@@ -565,7 +583,7 @@ class ProjectAudit(Base):
 
 
 
-class Notification(Base):
+class Notification(Base): #done
     __tablename__ = "notifications"
     __table_args__ = (
         Index("idx_notification_user_unread", "user_id", "is_read"),
@@ -595,3 +613,56 @@ class Notification(Base):
     # Relationships
     user = relationship("User", foreign_keys=[user_id], back_populates="notifications")
     actor = relationship("User", foreign_keys=[actor_id])
+
+
+class Suggestion(Base):
+    __tablename__ = "suggestions"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=False)
+    status = Column(String(20), default="pending")  # pending/approved/rejected/implemented
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    user = relationship("User")
+    comments = relationship("SuggestionComment", back_populates="suggestion")
+    votes = relationship("SuggestionVote", back_populates="suggestion")
+    
+
+class SuggestionComment(Base):
+    __tablename__ = "suggestion_comments"
+    __table_args__ = {"schema": "portfolio_pro_app"}
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    suggestion_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.suggestions.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    content = Column(Text, nullable=False)
+    parent_comment_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.suggestion_comments.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    suggestion = relationship("Suggestion", back_populates="comments")
+    user = relationship("User")
+    replies = relationship("SuggestionComment", back_populates="parent_comment", remote_side=[id])
+    parent_comment = relationship("SuggestionComment", back_populates="replies", remote_side=[parent_comment_id])
+
+
+class SuggestionVote(Base):
+    __tablename__ = "suggestion_votes"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'suggestion_id', name='uq_user_suggestion_vote'),
+        {"schema": "portfolio_pro_app"}
+    )
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.users.id"))
+    suggestion_id = Column(UUID(as_uuid=True), ForeignKey("portfolio_pro_app.suggestions.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User")
+    suggestion = relationship("Suggestion", back_populates="votes")
