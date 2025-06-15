@@ -600,3 +600,4 @@ async def get_section_stats(
         "by_type": section_types,
         "user_id": user_id,
     }
+

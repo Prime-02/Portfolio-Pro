@@ -666,3 +666,5 @@ class SuggestionVote(Base):
     # Relationships
     user = relationship("User")
     suggestion = relationship("Suggestion", back_populates="votes")
+
+    

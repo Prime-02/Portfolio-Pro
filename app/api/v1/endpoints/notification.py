@@ -169,6 +169,7 @@ async def get_user_notifications_endpoint(
     return notifications
 
 
+
 @router.get("/unread/count")
 async def get_unread_count(
     user: User = Depends(get_current_user),
