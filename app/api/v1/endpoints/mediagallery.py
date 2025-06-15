@@ -2,7 +2,7 @@ from typing import List, Optional, Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from database import get_db
+from app.database import get_db
 from app.core.security import get_current_user, optional_current_user
 from app.models.db_models import User
 from app.models.schemas import MediaGalleryCreate, MediaGalleryUpdate, MediaGallery

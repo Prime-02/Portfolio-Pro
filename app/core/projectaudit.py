@@ -3,8 +3,8 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc
 from fastapi import HTTPException, status, Request
-from models.db_models import ProjectAudit as ProjectAuditModel, User, PortfolioProject
-from models.schemas import ProjectAuditCreate, ProjectAudit
+from app.models.db_models import ProjectAudit as ProjectAuditModel, User, PortfolioProject
+from app.models.schemas import ProjectAuditCreate, ProjectAudit
 
 
 async def create_project_audit_log(

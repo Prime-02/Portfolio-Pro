@@ -707,6 +707,6 @@ SuggestionCommentResponse.model_rebuild()
 
 # Update schemas (for PUT/PATCH requests)
 class SuggestionUpdate(BaseModel):
-    title: Optional[str]
-    description: Optional[str]
-    status: Optional[str]
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None 

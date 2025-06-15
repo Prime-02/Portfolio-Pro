@@ -4,8 +4,8 @@ from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
-from models.db_models import Suggestion, SuggestionComment, SuggestionVote, User
-from models.schemas import SuggestionBase, SuggestionUpdate, SuggestionCommentBase
+from app.models.db_models import Suggestion, SuggestionComment, SuggestionVote, User
+from app.models.schemas import SuggestionBase, SuggestionUpdate, SuggestionCommentBase
 
 
 # ================== SUGGESTION CRUD ==================
@@ -248,7 +248,7 @@ async def create_comment(
     await db.refresh(db_comment)
     
     # Load relationships for response
-    return await get_comment_by_id(db, db_comment.id)
+    return await get_comment_by_id(db, UUID(str(db_comment.id)))
 
 
 async def get_comment_by_id(db: AsyncSession, comment_id: UUID) -> Optional[SuggestionComment]:

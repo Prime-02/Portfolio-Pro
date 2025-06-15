@@ -16,6 +16,7 @@ from .endpoints import testimonial
 from .endpoints import customsection
 from .endpoints import mediagallery
 from .endpoints import projectaudit
+from .endpoints import suggestions
 
 router = APIRouter()
 router.include_router(auth.router)
@@ -35,3 +36,4 @@ router.include_router(testimonial.router)
 router.include_router(customsection.router)
 router.include_router(mediagallery.router)
 router.include_router(projectaudit.router)
+router.include_router(suggestions.router)

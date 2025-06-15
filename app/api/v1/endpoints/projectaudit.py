@@ -2,11 +2,11 @@ from typing import List, Optional, Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from database import get_db
-from auth import get_current_user
-from models.db_models import User
-from models.schemas import ProjectAuditCreate, ProjectAudit
-from core.projectaudit import (
+from app.database import get_db
+from app.core.security import get_current_user
+from app.models.db_models import User
+from app.models.schemas import ProjectAuditCreate, ProjectAudit
+from app.core.projectaudit import (
     create_project_audit_log,
     get_project_audit_logs,
     get_user_audit_logs,
