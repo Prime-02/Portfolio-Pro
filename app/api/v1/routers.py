@@ -13,6 +13,9 @@ from .endpoints import projectengagements
 from .endpoints import education
 from .endpoints import contentblock
 from .endpoints import testimonial
+from .endpoints import customsection
+from .endpoints import mediagallery
+from .endpoints import projectaudit
 
 router = APIRouter()
 router.include_router(auth.router)
@@ -28,4 +31,7 @@ router.include_router(notification.router)
 router.include_router(projectengagements.router)
 router.include_router(education.router)
 router.include_router(contentblock.router)
-router.include_router(testimonial.rou)
+router.include_router(testimonial.router)
+router.include_router(customsection.router)
+router.include_router(mediagallery.router)
+router.include_router(projectaudit.router)

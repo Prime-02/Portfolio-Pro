@@ -363,7 +363,7 @@ class Certification(Base): #done
     user = relationship("User", back_populates="certifications")
 
 
-class MediaGallery(Base):
+class MediaGallery(Base): #done
     __tablename__ = "media_gallery"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -379,7 +379,7 @@ class MediaGallery(Base):
     user = relationship("User", back_populates="media_items")
 
 
-class CustomSection(Base):
+class CustomSection(Base): #done
     __tablename__ = "custom_sections"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -395,7 +395,7 @@ class CustomSection(Base):
     items = relationship("CustomSectionItem", back_populates="section")
 
 
-class CustomSectionItem(Base):
+class CustomSectionItem(Base): #done
     __tablename__ = "custom_section_items"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -414,7 +414,7 @@ class CustomSectionItem(Base):
     section = relationship("CustomSection", back_populates="items")
 
 
-class Education(Base):
+class Education(Base): #done
     __tablename__ = "education"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -431,7 +431,7 @@ class Education(Base):
     user = relationship("User", back_populates="education")
 
 
-class ContentBlock(Base):
+class ContentBlock(Base): #done
     __tablename__ = "content_blocks"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -446,7 +446,7 @@ class ContentBlock(Base):
     user = relationship("User", back_populates="content_blocks")
 
 
-class Testimonial(Base): 
+class Testimonial(Base):  #done
     __tablename__ = "testimonials"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -511,7 +511,7 @@ class UserProjectAssociation(Base): #done
     project = relationship("PortfolioProject", back_populates="user_associations")
 
 
-class ProjectLike(Base):
+class ProjectLike(Base): #done
     __tablename__ = "project_likes"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -526,7 +526,7 @@ class ProjectLike(Base):
     user = relationship("User")
 
 
-class ProjectComment(Base):
+class ProjectComment(Base): #done
     __tablename__ = "project_comments"
     __table_args__ = {"schema": "portfolio_pro_app"}
 
@@ -553,7 +553,7 @@ class ProjectComment(Base):
     )
 
 
-class ProjectAudit(Base):
+class ProjectAudit(Base): #done
     __tablename__ = "project_audit_logs"
     __table_args__ = (
         Index("idx_project_audit_project_id", "project_id"),

@@ -90,7 +90,7 @@ async def get_all_content_blocks(
     limit: int = 10,
     block_type: Optional[str] = None,
     is_visible: Optional[bool] = None
-) -> Dict[str, Union[List[ContentBlockBase], int]]:
+) -> Dict[str, Union[List[ContentBlockBase], int, None]]:
     """Get all content blocks for the current user with pagination"""
     
     # Build query with optional filters
@@ -141,7 +141,7 @@ async def get_all_content_blocks_public(
     block_type: Optional[str] = None,
     is_visible: Optional[bool] = None,
     user_id: Optional[UUID] = None
-) -> Dict[str, Union[List[ContentBlockBase], int]]:
+) -> Dict[str, Union[List[ContentBlockBase], int, None]]:
     """Get all content blocks (public access) with filtering and pagination"""
     
     # Build query with optional filters
@@ -340,7 +340,7 @@ async def get_content_blocks_by_user_id(
     limit: int = 10,
     block_type: Optional[str] = None,
     is_visible: Optional[bool] = None
-) -> Dict[str, Union[List[ContentBlockBase], int]]:
+) -> Dict[str, Union[List[ContentBlockBase], int, None]]:
     """Get all content blocks for a specific user (public access)"""
     
     # Build query with optional filters

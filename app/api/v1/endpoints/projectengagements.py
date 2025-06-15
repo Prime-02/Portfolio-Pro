@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.schemas import (
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/engagements", tags=["Projects"])
 @router.post("/projects/{project_id}/likes", response_model=ProjectLike, status_code=status.HTTP_201_CREATED)
 async def create_project_like(
     project_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Like a project"""
@@ -33,7 +33,7 @@ async def create_project_like(
 @router.delete("/projects/{project_id}/likes", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project_like(
     project_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Unlike a project"""
@@ -44,7 +44,7 @@ async def delete_project_like(
 @router.post("/projects/{project_id}/likes/toggle")
 async def toggle_project_like(
     project_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Toggle like status for a project"""
@@ -56,7 +56,7 @@ async def get_project_likes(
     project_id: UUID,
     skip: int = Query(0, ge=0, description="Number of likes to skip"),
     limit: int = Query(100, ge=1, le=100, description="Number of likes to return"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get all likes for a specific project"""
     return await crud.get_project_likes(db=db, project_id=project_id, skip=skip, limit=limit)
@@ -65,7 +65,7 @@ async def get_project_likes(
 @router.get("/projects/{project_id}/likes/count")
 async def get_project_likes_count(
     project_id: UUID,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get the total count of likes for a project"""
     count = await crud.get_project_likes_count(db=db, project_id=project_id)
@@ -75,7 +75,7 @@ async def get_project_likes_count(
 @router.get("/projects/{project_id}/likes/check")
 async def check_user_liked_project(
     project_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Check if current user has liked a project"""
@@ -87,7 +87,7 @@ async def check_user_liked_project(
 async def get_my_likes(
     skip: int = Query(0, ge=0, description="Number of likes to skip"),
     limit: int = Query(100, ge=1, le=100, description="Number of likes to return"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Get all likes by the current user"""
@@ -99,7 +99,7 @@ async def get_user_likes(
     user_id: UUID,
     skip: int = Query(0, ge=0, description="Number of likes to skip"),
     limit: int = Query(100, ge=1, le=100, description="Number of likes to return"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get all likes by a specific user"""
     return await crud.get_user_likes(db=db, user_id=user_id, skip=skip, limit=limit)
@@ -108,7 +108,7 @@ async def get_user_likes(
 @router.get("/likes/{like_id}", response_model=ProjectLike)
 async def get_project_like(
     like_id: UUID,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get a specific project like by ID"""
     like = await crud.get_project_like(db=db, like_id=like_id)
@@ -123,7 +123,7 @@ async def get_project_like(
 async def create_project_comment(
     project_id: UUID,
     comment_data: ProjectCommentCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Create a new comment on a project"""
@@ -141,7 +141,7 @@ async def get_project_comments(
     include_replies: bool = Query(True, description="Include replies in the response"),
     sort_by: str = Query("created_at", description="Field to sort by"),
     sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get all comments for a specific project"""
     return await crud.get_project_comments(
@@ -158,7 +158,7 @@ async def get_project_comments(
 @router.get("/projects/{project_id}/comments/count")
 async def get_project_comments_count(
     project_id: UUID,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get the total count of comments for a project"""
     count = await crud.get_project_comments_count(db=db, project_id=project_id)
@@ -168,7 +168,7 @@ async def get_project_comments_count(
 @router.get("/comments/{comment_id}", response_model=ProjectComment)
 async def get_project_comment(
     comment_id: UUID,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get a specific comment by ID"""
     comment = await crud.get_project_comment(db=db, comment_id=comment_id)
@@ -180,7 +180,7 @@ async def get_project_comment(
 @router.get("/comments/{comment_id}/thread", response_model=ProjectComment)
 async def get_comment_thread(
     comment_id: UUID,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get a comment with all its nested replies"""
     thread = await crud.get_comment_thread(db=db, comment_id=comment_id)
@@ -194,7 +194,7 @@ async def get_comment_replies(
     parent_comment_id: UUID,
     skip: int = Query(0, ge=0, description="Number of replies to skip"),
     limit: int = Query(50, ge=1, le=100, description="Number of replies to return"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get all replies to a specific comment"""
     return await crud.get_comment_replies(
@@ -209,7 +209,7 @@ async def get_comment_replies(
 async def update_project_comment(
     comment_id: UUID,
     comment_update: ProjectCommentUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Update a project comment (only by the author)"""
@@ -224,7 +224,7 @@ async def update_project_comment(
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project_comment(
     comment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Delete a project comment (only by the author)"""
@@ -236,7 +236,7 @@ async def delete_project_comment(
 async def get_my_comments(
     skip: int = Query(0, ge=0, description="Number of comments to skip"),
     limit: int = Query(100, ge=1, le=100, description="Number of comments to return"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Get all comments by the current user"""
@@ -248,7 +248,7 @@ async def get_user_comments(
     user_id: UUID,
     skip: int = Query(0, ge=0, description="Number of comments to skip"),
     limit: int = Query(100, ge=1, le=100, description="Number of comments to return"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get all comments by a specific user"""
     return await crud.get_user_comments(db=db, user_id=user_id, skip=skip, limit=limit)
@@ -259,7 +259,7 @@ async def get_user_comments(
 @router.get("/projects/{project_id}/engagement")
 async def get_project_engagement_stats(
     project_id: UUID,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get engagement statistics for a project"""
     return await crud.get_project_engagement_stats(db=db, project_id=project_id)
@@ -268,7 +268,7 @@ async def get_project_engagement_stats(
 @router.get("/users/{user_id}/engagement")
 async def get_user_engagement_stats(
     user_id: UUID,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get engagement statistics for a user"""
     return await crud.get_user_engagement_stats(db=db, user_id=user_id)
@@ -276,7 +276,7 @@ async def get_user_engagement_stats(
 
 @router.get("/users/me/engagement")
 async def get_my_engagement_stats(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Get engagement statistics for the current user"""
@@ -288,7 +288,7 @@ async def get_my_engagement_stats(
 @router.get("/projects/batch/engagement")
 async def get_multiple_projects_engagement(
     project_ids: List[UUID] = Query(..., description="List of project IDs"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Get engagement statistics for multiple projects"""
     results = []
@@ -302,7 +302,7 @@ async def get_multiple_projects_engagement(
 async def reply_to_comment(
     parent_comment_id: UUID,
     reply_content: dict,  # Expecting {"content": "reply text"}
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """Create a reply to an existing comment"""
@@ -329,7 +329,7 @@ async def get_all_comments_admin(
     limit: int = Query(100, ge=1, le=100),
     project_id: Optional[UUID] = Query(None, description="Filter by project ID"),
     user_id: Optional[UUID] = Query(None, description="Filter by user ID"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)  # Add admin check here
 ):
     """Admin endpoint to get all comments with optional filters"""
@@ -349,7 +349,7 @@ async def get_all_comments_admin(
 @router.delete("/admin/comments/{comment_id}")
 async def delete_comment_admin(
     comment_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)  # Add admin check here
 ):
     """Admin endpoint to delete any comment"""
@@ -372,7 +372,7 @@ async def get_all_likes_admin(
     limit: int = Query(100, ge=1, le=100),
     project_id: Optional[UUID] = Query(None, description="Filter by project ID"),
     user_id: Optional[UUID] = Query(None, description="Filter by user ID"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)  # Add admin check here
 ):
     """Admin endpoint to get all likes with optional filters"""

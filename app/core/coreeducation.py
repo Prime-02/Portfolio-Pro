@@ -79,7 +79,7 @@ async def get_all_educations(
     db: AsyncSession,
     skip: int = 0,
     limit: int = 10
-) -> Dict[str, Union[List[EducationBase], int]]:
+) -> Dict[str, Union[List[EducationBase], int, None]]:
     """Get all educations for the current user with pagination"""
     
     # Get total count
@@ -125,7 +125,7 @@ async def get_all_educations_public(
     institution: Optional[str] = None,
     degree: Optional[str] = None,
     field_of_study: Optional[str] = None
-) -> Dict[str, Union[List[EducationBase], int]]:
+) -> Dict[str, Union[List[EducationBase], int, None]]:
     """Get all educations (public access) with filtering and pagination"""
     
     # Build query with optional filters
@@ -336,7 +336,7 @@ async def get_educations_by_user_id(
     db: AsyncSession,
     skip: int = 0,
     limit: int = 10
-) -> Dict[str, Union[List[EducationBase], int]]:
+) -> Dict[str, Union[List[EducationBase], int, None]]:
     """Get all educations for a specific user (public access)"""
     
     # Get total count

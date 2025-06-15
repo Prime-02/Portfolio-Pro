@@ -120,6 +120,7 @@ class ProfessionalSkills(ProfessionalSkillsBase):
 
 # Social Links Schemas
 class SocialLinksBase(BaseModel):
+    id: Optional[UUID] = None
     platform_name: str  # e.g., LinkedIn, GitHub
     profile_url: str
 
@@ -136,7 +137,6 @@ class SocialLinksUpdate(BaseModel):
 
 
 class SocialLinks(SocialLinksBase):
-    id: UUID
     user_id: UUID
     created_at: datetime
 
@@ -608,11 +608,6 @@ class ProjectAuditCreate(ProjectAuditBase):
     user_id: UUID
 
 
-class ProjectAuditUpdate(BaseModel):
-    action: Optional[str] = None
-    details: Optional[dict] = None
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
 
 
 class ProjectAudit(ProjectAuditBase):
