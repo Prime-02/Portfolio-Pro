@@ -16,6 +16,8 @@ from app.database import get_db
 from app.dependencies import get_db
 from app.models.db_models import User, UserSettings
 from app.models.schemas import DBUser, UserWithSettings
+from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.security.utils import get_authorization_scheme_param
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
@@ -159,6 +161,112 @@ async def optional_current_user(
             return None
         result = await db.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
+    except JWTError:
+        return None
+
+
+async def get_websocket_user(
+    websocket: WebSocket,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    strict: bool = False,
+) -> Optional[User]:
+    """
+    Authenticate user via WebSocket with error control.
+
+    Args:
+        strict: If True, closes connection on failure. If False, returns None.
+    """
+    # Get token from query parameters or headers
+    auth_header = websocket.headers.get("Authorization")
+    token = None
+
+    if auth_header:
+        scheme, token = get_authorization_scheme_param(auth_header)
+        if scheme.lower() != "bearer":
+            return None
+
+    # Fallback to query parameter
+    if not token:
+        token = websocket.query_params.get("token")
+
+    if not token:
+        return None
+
+    if not token:
+        if strict:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            raise WebSocketDisconnect()
+        return None
+
+    # Handle Bearer token if present
+    scheme, token = get_authorization_scheme_param(token)
+    if scheme.lower() != "bearer":
+        if strict:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            raise WebSocketDisconnect()
+        return None
+
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+        username: Any = payload.get("sub")
+        if not username:
+            if strict:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                raise WebSocketDisconnect()
+            return None
+
+        result = await db.execute(select(User).where(User.username == username))
+        user = result.scalar_one_or_none()
+
+        if user is None and strict:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            raise WebSocketDisconnect()
+        return user
+
+    except JWTError:
+        if strict:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            raise WebSocketDisconnect()
+        return None
+
+
+async def optional_websocket_user(
+    websocket: WebSocket,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> Optional[User]:
+    """
+    Optional WebSocket authentication that never closes the connection.
+    """
+    # Get token from query parameters or headers
+    token = websocket.query_params.get("token") or websocket.headers.get(
+        "Authorization"
+    )
+
+    if not token:
+        return None
+
+    # Handle Bearer token if present
+    scheme, token = get_authorization_scheme_param(token)
+    if scheme.lower() != "bearer":
+        return None
+
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+        username = payload.get("sub")
+        if not username:
+            return None
+
+        result = await db.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
+
     except JWTError:
         return None
 

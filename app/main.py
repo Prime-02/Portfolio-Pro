@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # <-- Add this import
 from contextlib import asynccontextmanager
 from app.api.v1.routers import router as v1_router

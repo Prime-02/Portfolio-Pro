@@ -27,22 +27,24 @@ def get_access_token():
 
 
 def send_email(to: str, subject: str, body: str):
-    access_token = get_access_token()
+    print("Sending email...")
+    # Uncomment the following lines to enable email sending functionality
+    # access_token = get_access_token()
 
-    message = MIMEText(body)
-    message["to"] = to
-    message["subject"] = subject
-    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    # message = MIMEText(body)
+    # message["to"] = to
+    # message["subject"] = subject
+    # raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
 
-    url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
-    data = {"raw": raw_message}
+    # url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+    # headers = {
+    #     "Authorization": f"Bearer {access_token}",
+    #     "Content-Type": "application/json",
+    # }
+    # data = {"raw": raw_message}
 
-    response = requests.post(url, headers=headers, json=data)
-    if response.ok:
-        print("✅ Email sent successfully.")
-    else:
-        print("❌ Failed to send email:", response.text)
+    # response = requests.post(url, headers=headers, json=data)
+    # if response.ok:
+    #     print("✅ Email sent successfully.")
+    # else:
+    #     print("❌ Failed to send email:", response.text)
