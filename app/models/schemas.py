@@ -461,8 +461,6 @@ class EducationUpdate(BaseModel):
     description: Optional[str] = None
 
 
-
-
 # Content Block Schemas
 class ContentBlockBase(BaseModel):
     id: Optional[UUID] = None
@@ -487,7 +485,6 @@ class ContentBlockUpdate(BaseModel):
     position: Optional[int] = None
     is_visible: Optional[bool] = None
 
-    
 
 # Testimonial Schemas
 class TestimonialBase(BaseModel):
@@ -514,7 +511,6 @@ class TestimonialUpdate(BaseModel):
     content: Optional[str] = None
     rating: Optional[int] = Field(None, ge=1, le=5)
     is_approved: Optional[bool] = None
-
 
 
 # User Project Association Schemas
@@ -608,8 +604,6 @@ class ProjectAuditCreate(ProjectAuditBase):
     user_id: UUID
 
 
-
-
 class ProjectAudit(ProjectAuditBase):
     id: UUID
     project_id: UUID
@@ -644,8 +638,7 @@ class NotificationOut(NotificationBase):
     read_at: Optional[datetime]
     meta_data: Optional[dict]  # JSON parsed to dict
 
-    class Config:
-        orm_mode = True  # Enable ORM compatibility
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Rebuild models to resolve forward references
@@ -661,9 +654,11 @@ class SuggestionBase(BaseModel):
     description: str
     status: Optional[str] = "pending"
 
+
 class SuggestionCommentBase(BaseModel):
     content: str
     parent_comment_id: Optional[UUID] = None
+
 
 class SuggestionVoteBase(BaseModel):
     pass  # No fields needed for base as it's just user_id and suggestion_id
@@ -680,6 +675,7 @@ class SuggestionCommentResponse(SuggestionCommentBase):
     class Config:
         orm_mode = True
 
+
 class SuggestionVoteResponse(SuggestionVoteBase):
     id: UUID
     user_id: UUID
@@ -689,6 +685,7 @@ class SuggestionVoteResponse(SuggestionVoteBase):
 
     class Config:
         orm_mode = True
+
 
 class SuggestionResponse(SuggestionBase):
     id: UUID
@@ -702,11 +699,13 @@ class SuggestionResponse(SuggestionBase):
     class Config:
         orm_mode = True
 
+
 # Update this to handle recursive comments
 SuggestionCommentResponse.model_rebuild()
+
 
 # Update schemas (for PUT/PATCH requests)
 class SuggestionUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[str] = None 
+    status: Optional[str] = None

@@ -2,27 +2,26 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.pool import NullPool
 from app.config import settings
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 import logging
-from fastapi import Request
-
+from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
-# Database engine configuration
+# Database engine configuration with optimized settings for WebSockets
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=False,  # Disabled as we have proper connection handling
-    pool_recycle=3600,  # Recycle connections after 1 hour
-    pool_timeout=30,  # Wait 30 seconds for a connection
-    echo=settings.ENVIRONMENT == "development",  # Only echo in development
+    pool_size=20,  # Increased pool size for WebSocket connections
+    max_overflow=30,
+    pool_pre_ping=True,  # Important for long-lived connections
+    pool_recycle=3600,  # Recycle connections every hour
+    pool_timeout=30,
+    echo=settings.ENVIRONMENT == "development",
     future=True,
 )
 
-# Session factory
-SessionLocal = async_sessionmaker(
+# Base session factory
+BaseSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine,
@@ -33,9 +32,10 @@ SessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 
+# Regular HTTP request session (auto-closing)
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Async dependency that provides a database session"""
-    async with SessionLocal() as session:
+    """Async generator for HTTP request database sessions (auto-closing)"""
+    async with BaseSessionLocal() as session:
         try:
             yield session
         except Exception as e:
@@ -46,6 +46,32 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+# WebSocket-specific session management
+class WebSocketSessionManager:
+    """Manages long-lived sessions for WebSocket connections"""
+
+    @staticmethod
+    @asynccontextmanager
+    async def get_session() -> AsyncGenerator[AsyncSession, None]:
+        """
+        Context manager for WebSocket sessions that stays open until explicitly closed.
+        Must be manually closed by the caller when the WebSocket disconnects.
+        """
+        session = BaseSessionLocal()
+        try:
+            yield session
+        except Exception as e:
+            logger.error(f"WebSocket session error: {e}")
+            await session.rollback()
+            raise
+
+    @staticmethod
+    async def create_session() -> AsyncSession:
+        """Create a new WebSocket session that must be manually closed"""
+        return BaseSessionLocal()
+
+
+# Schema verification (unchanged)
 async def verify_schema_exists():
     """Verify that the required schema exists without attempting to create it"""
     if "postgresql" in settings.DATABASE_URL:
@@ -65,3 +91,7 @@ async def verify_schema_exists():
         except Exception as e:
             logger.error(f"Schema verification failed: {e}")
             raise
+
+
+# For backward compatibility
+get_websocket_db = WebSocketSessionManager.get_session

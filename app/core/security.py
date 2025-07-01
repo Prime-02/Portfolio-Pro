@@ -179,36 +179,39 @@ async def get_websocket_user(
     # Get token from query parameters or headers
     auth_header = websocket.headers.get("Authorization")
     token = None
+    from_header = False
 
     if auth_header:
         scheme, token = get_authorization_scheme_param(auth_header)
         if scheme.lower() != "bearer":
+            if strict:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                raise WebSocketDisconnect()
             return None
+        from_header = True
 
     # Fallback to query parameter
     if not token:
         token = websocket.query_params.get("token")
 
     if not token:
-        return None
-
-    if not token:
         if strict:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             raise WebSocketDisconnect()
         return None
 
-    # Handle Bearer token if present
-    scheme, token = get_authorization_scheme_param(token)
-    if scheme.lower() != "bearer":
-        if strict:
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            raise WebSocketDisconnect()
-        return None
+    # Only parse Bearer scheme if token came from header
+    # Query parameter tokens are already raw JWT strings
+    if not from_header:
+        # Token from query param - use as is
+        jwt_token = token
+    else:
+        # Token already parsed from Authorization header
+        jwt_token = token
 
     try:
         payload = jwt.decode(
-            token,
+            jwt_token,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
