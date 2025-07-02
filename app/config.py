@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     GMAIL_REFRESH_TOKEN: str
     MAIL_DEFAULT_SENDER: str
     ENVIRONMENT: str = "development"  # Default to development
+    DEEPSEEK_API_KEY: str
+    DEEPSEEK_API_URL: str
 
     class Config:
         env_file = ".env"
