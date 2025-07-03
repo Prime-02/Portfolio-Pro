@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     app_name: str = "My FastAPI App"
     admin_email: str  # Required field
@@ -16,6 +17,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"  # Default to development
     DEEPSEEK_API_KEY: str
     DEEPSEEK_API_URL: str
+    CLERK_JWKS_URL: str
+    CLERK_WEBHOOK_SECRET: str = ""
 
     class Config:
         env_file = ".env"

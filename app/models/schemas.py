@@ -12,6 +12,9 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    id: Optional[str] = None
 
 
 class UserSettingsBase(BaseModel):
@@ -47,7 +50,17 @@ class UserWithSettings(DBUser, UserSettingsBase):
     pass
 
 
+
+class WebhookUserDeleteData(BaseModel):
+    id: str
+    auth_id: Optional[str] = ""
+
+class UserDeleteRequest(BaseModel):
+    data: WebhookUserDeleteData
+
+
 class UserUpdateRequest(BaseModel):
+    id: Optional[str]  = None
     username: Optional[str] = None
     firstname: Optional[str] = None
     middlename: Optional[str] = None
@@ -59,6 +72,8 @@ class UserUpdateRequest(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class WebhookUserUpdateData(BaseModel):
+    data: UserUpdateRequest
 
 class UserProfileRequest(BaseModel):
     user_id: Optional[UUID] = None
@@ -709,3 +724,29 @@ class SuggestionUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
+
+
+from fastapi import Form
+
+
+class OAuth2EmailRequestForm:
+    """Modified version that expects 'email' instead of 'username'"""
+
+    def __init__(
+        self,
+        email: str = Form(...),
+        password: str = Form(...),
+    ):
+        self.email = email
+        self.password = password
+
+
+# Optional: Pydantic model for documentation
+class EmailPasswordRequest(BaseModel):
+    email: str
+    password: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {"email": "user@example.com", "password": "secret123"}
+        }

@@ -259,3 +259,48 @@ async def get_user_notifications(
         )
 
 
+
+
+from typing import Any
+from fastapi import Request
+
+async def create_user_notification(
+    user: User,
+    db: AsyncSession,
+    message: str,
+    notification_type: str,
+    action_url: Optional[str] = None,
+    meta_data: Optional[Dict[str, Any]] = None,
+    request: Optional[Request] = None,
+):
+    """Helper function to create user notifications with optional request context"""
+
+    # Get client info if request is provided
+    client_ip = "unknown"
+    user_agent = "unknown"
+
+    if request and request.client:
+        client_ip = request.client.host
+        user_agent = request.headers.get("user-agent", "unknown")
+
+    # Prepare metadata
+    notification_meta = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "ip_address": client_ip,
+        "user_agent": user_agent,
+    }
+
+    if meta_data:
+        notification_meta.update(meta_data)
+
+    # Pass the dictionary directly to NotificationCreate (don't convert to JSON string)
+    notification_data = NotificationCreate(
+        message=message,
+        notification_type=notification_type,
+        action_url=action_url,
+        meta_data=notification_meta,  # Pass dictionary directly
+    )
+
+    commons = {"user": user, "db": db, "data": notification_data}
+
+    await create_notification(commons)

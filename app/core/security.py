@@ -102,8 +102,8 @@ async def verify_token(token: str = Depends(oauth2_scheme)) -> Dict[str, int]:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        username: Any = payload.get("sub")
-        if not isinstance(username, str):  # Correct way to check type
+        userid: Any = payload.get("sub")
+        if not isinstance(userid, str):  # Correct way to check type
             raise credentials_exception
         return payload
     except JWTError:
@@ -127,13 +127,13 @@ async def get_current_user(
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-        username: Any = payload.get("sub")
-        if not username:
+        id: Any = payload.get("sub")
+        if not id:
             if strict:
                 raise credentials_exception
             return None
 
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.id == str(id)))
         user = result.scalar_one_or_none()
 
         if user is None and strict:
@@ -156,10 +156,10 @@ async def optional_current_user(
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-        username = payload.get("sub")
-        if not username:
+        id = payload.get("sub")
+        if not id:
             return None
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.id == str(id)))
         return result.scalar_one_or_none()
     except JWTError:
         return None
@@ -215,14 +215,14 @@ async def get_websocket_user(
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-        username: Any = payload.get("sub")
-        if not username:
+        id: Any = payload.get("sub")
+        if not id:
             if strict:
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
                 raise WebSocketDisconnect()
             return None
 
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.id == str(id)))
         user = result.scalar_one_or_none()
 
         if user is None and strict:
@@ -263,11 +263,11 @@ async def optional_websocket_user(
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-        username = payload.get("sub")
-        if not username:
+        id = payload.get("sub")
+        if not id:
             return None
 
-        result = await db.execute(select(User).where(User.username == username))
+        result = await db.execute(select(User).where(User.id == str(id)))
         return result.scalar_one_or_none()
 
     except JWTError:
@@ -328,7 +328,7 @@ async def get_user_settings(
     result = await db.execute(
         select(User)
         .options(selectinload(User.settings))
-        .where(User.id == current_user.id)
+        .where(User.id == str(current_user.id))
     )
     user = result.scalars().first()
 
@@ -351,7 +351,7 @@ async def get_user_with_settings(
         .options(selectinload(User.settings))
         .where(
             and_(
-                User.id == current_user.id,
+                User.id == str(current_user.id),
                 User.is_active,
             )
         )
@@ -410,17 +410,17 @@ def verify_password(
 
 
 async def authenticate_user(
-    db: AsyncSession, username_or_email: str, password: str
+    db: AsyncSession, id_or_email: str, password: str
 ) -> Optional[User]:
     """
-    Authenticate user with either username or email and verify password.
+    Authenticate user with either id or email and verify password.
     """
-    # Try to find user by username or email
+    # Try to find user by id or email
     result = await db.execute(
         select(User).where(
             or_(
-                User.username == username_or_email,
-                User.email == username_or_email,
+                # User.id == str(id_or_email),
+                User.email == id_or_email,
             )
         )
     )
@@ -437,7 +437,7 @@ async def authenticate_user(
 
 def validate_username(username: str) -> bool:
     """
-    Validate a username for authentication purposes.
+    Valusernameate a username for authentication purposes.
 
     Rules:
     - Length between 3 and 30 characters
@@ -447,8 +447,8 @@ def validate_username(username: str) -> bool:
     - Not a reserved word (admin, root, etc.)
 
     Returns:
-    - True if username is valid
-    - False if invalid
+    - True if username is valusername
+    - False if invalusername
     """
     if not isinstance(username, str):
         return False
