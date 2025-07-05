@@ -116,7 +116,7 @@ from app.core.security import (
     validate_username,
 )
 from datetime import timedelta
-from app.models.db_models import User, UserSettings, UserDevices
+from app.models.db_models import User, UserDevices
 from app.services.gmail_utils import send_email
 from app.core.corenotification import create_notification
 from datetime import datetime

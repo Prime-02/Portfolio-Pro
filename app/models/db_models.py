@@ -144,6 +144,11 @@ class UserSettings(Base):  # done
 
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     language = Column(String, index=True, default="en")
+    loader = Column(
+        String,
+        nullable=True,
+        default="portfolio-pro",
+    )
     theme = Column(String, default="custom")  # 'light', 'dark', 'custom'
     primary_theme = Column(String, default="#000000")
     secondary_theme = Column(String, default="#FFFFFF")

@@ -110,7 +110,7 @@ async def get_user_info(
         # Execute query with eager loading of common relationships
         result = await db.execute(
             select(User)
-            .where(User.id == user.id)
+            .where(User.id == str(user.id))
             .options(
                 selectinload(User.profile),  # If you have a profile relationship
                 selectinload(User.social_links),  # If you need social links
@@ -198,7 +198,7 @@ async def get_profile(
     try:
         result = await db.execute(
             select(UserProfile)
-            .where(UserProfile.user_id == user.id)
+            .where(str(UserProfile.user_id) == str(user.id))
             .options(selectinload(UserProfile.user))
         )  # Eager load user if needed
         profile = result.scalar_one_or_none()

@@ -23,6 +23,7 @@ class UserSettingsBase(BaseModel):
     primary_theme: Optional[str] = None
     secondary_theme: Optional[str] = None
     layout_style: Optional[str] = None
+    loader: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -60,7 +61,7 @@ class UserDeleteRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    id: Optional[str]  = None
+    id: Optional[UUID]  = None
     username: Optional[str] = None
     firstname: Optional[str] = None
     middlename: Optional[str] = None
