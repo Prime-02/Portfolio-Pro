@@ -85,9 +85,12 @@ async def create_new_user(
     db_settings = UserSettings(
         language="en",
         theme="light",
-        primary_theme="#000000",
-        owner_id=db_user.id,
+        primary_theme="#171717",
         secondary_theme="#ffffff",
+        accent="#05df72",
+        primary_theme_dark="#0a0a0a",
+        secondary_theme_dark="#ededed",
+        owner_id=db_user.id,
         layout_style="default",
     )
     db.add(db_settings)

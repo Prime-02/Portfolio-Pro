@@ -150,8 +150,11 @@ class UserSettings(Base):  # done
         default="portfolio-pro",
     )
     theme = Column(String, default="custom")  # 'light', 'dark', 'custom'
-    primary_theme = Column(String, default="#000000")
-    secondary_theme = Column(String, default="#FFFFFF")
+    primary_theme = Column(String, default="#171717")
+    secondary_theme = Column(String, default="#ffffff")
+    accent = Column(String, default="#05df72")
+    primary_theme_dark = Column(String, default="#ededed")
+    secondary_theme_dark = Column(String, default="#0a0a0a")
     layout_style = Column(
         String, default="modern"
     )  # 'modern', 'creative', 'minimalist'

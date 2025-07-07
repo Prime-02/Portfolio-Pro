@@ -22,6 +22,9 @@ class UserSettingsBase(BaseModel):
     theme: Optional[str] = None
     primary_theme: Optional[str] = None
     secondary_theme: Optional[str] = None
+    accent: Optional[str] = None
+    primary_theme_dark: Optional[str] = None
+    secondary_theme_dark: Optional[str] = None
     layout_style: Optional[str] = None
     loader: Optional[str] = None
 
@@ -51,17 +54,17 @@ class UserWithSettings(DBUser, UserSettingsBase):
     pass
 
 
-
 class WebhookUserDeleteData(BaseModel):
     id: str
     auth_id: Optional[str] = ""
+
 
 class UserDeleteRequest(BaseModel):
     data: WebhookUserDeleteData
 
 
 class UserUpdateRequest(BaseModel):
-    id: Optional[UUID]  = None
+    id: Optional[UUID] = None
     username: Optional[str] = None
     firstname: Optional[str] = None
     middlename: Optional[str] = None
@@ -73,8 +76,10 @@ class UserUpdateRequest(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class WebhookUserUpdateData(BaseModel):
     data: UserUpdateRequest
+
 
 class UserProfileRequest(BaseModel):
     user_id: Optional[UUID] = None
@@ -92,12 +97,8 @@ class UserProfileRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserSettingsUpdateRequest(BaseModel):
-    language: Optional[str] = None
-    theme: Optional[str] = None
-    primary_theme: Optional[str] = None
-    secondary_theme: Optional[str] = None
-    layout_style: Optional[str] = None
+class UserSettingsUpdateRequest(UserSettingsBase):
+    pass
 
 
 class UserDevicesRequest(BaseModel):
