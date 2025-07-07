@@ -14,7 +14,7 @@ async def create_suggestion(
     db: AsyncSession,
     suggestion_data: SuggestionBase,
     user: User
-) -> Suggestion:
+) -> SuggestionBase:
     """
     Create a new suggestion (max 3 per user).
     """
