@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 # Database engine configuration with optimized settings for WebSockets
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_size=20,  # Increased pool size for WebSocket connections
-    max_overflow=30,
+    pool_size=10,  # Reduce for Neon pooling
+    max_overflow=20,  # Reduce overflow
     pool_pre_ping=True,  # Important for long-lived connections
     pool_recycle=3600,  # Recycle connections every hour
     pool_timeout=30,
