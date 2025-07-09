@@ -1,25 +1,3 @@
-# Byte-compiled / optimized files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-venv/
-env/
-.venv/
-
-# # Environment files
-.env
-.env.local
-.env*.local
-
-# # IDE & Editor files
-.vscode/
-.idea/
-
-# # Build & distribution files
-dist/
-build/
-*.egg-info/
-
-alembic*
+!app/
+!requirements.txt
+!README.md
