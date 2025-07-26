@@ -1,4 +1,1 @@
-!app/
-!requirements.txt
-!README.md
-!render.yaml
+venv/
