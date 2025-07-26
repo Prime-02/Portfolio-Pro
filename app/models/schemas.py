@@ -14,6 +14,8 @@ class UserCreate(UserBase):
     password: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    profile_picture: Optional[str] = None
+    profile_picture_id: Optional[str] = None
     id: Optional[str] = None
 
 

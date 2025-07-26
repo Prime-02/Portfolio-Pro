@@ -1,0 +1,730 @@
+{
+  "timestamp": "2025-07-26T16:35:19.285452",
+  "database_info": {
+    "database_name": "portfolio_pro_db",
+    "current_user": "neondb_owner",
+    "server_version": "PostgreSQL 17.5 on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+    "current_schema": "public",
+    "session_user": "neondb_owner",
+    "connection_count": "1",
+    "database_size": "168 MB"
+  },
+  "connection_status": {
+    "status": "connected"
+  },
+  "schemas": {
+    "information_schema": {
+      "owner": "cloud_admin",
+      "type": "system",
+      "table_count": 0,
+      "tables": []
+    },
+    "pg_catalog": {
+      "owner": "cloud_admin",
+      "type": "system",
+      "table_count": 0,
+      "tables": []
+    },
+    "pg_toast": {
+      "owner": "cloud_admin",
+      "type": "system",
+      "table_count": 0,
+      "tables": []
+    },
+    "portfolio_pro_app": {
+      "owner": "neondb_owner",
+      "type": "user",
+      "table_count": 27,
+      "tables": [
+        "alembic_version",
+        "certifications",
+        "content_blocks",
+        "custom_section_items",
+        "custom_sections",
+        "education",
+        "media_gallery",
+        "notifications",
+        "portfolio_project_associations",
+        "portfolio_projects",
+        "portfolios",
+        "professional_skills",
+        "project_audit_logs",
+        "project_comments",
+        "project_likes",
+        "social_links",
+        "suggestion_comments",
+        "suggestion_votes",
+        "suggestions",
+        "tech_professions",
+        "testimonials",
+        "universities",
+        "user_devices",
+        "user_profile",
+        "user_project_association",
+        "user_settings",
+        "users"
+      ]
+    },
+    "public": {
+      "owner": "pg_database_owner",
+      "type": "user",
+      "table_count": 0,
+      "tables": []
+    }
+  },
+  "tables": {
+    "portfolio_pro_app.alembic_version": {
+      "schema": "portfolio_pro_app",
+      "name": "alembic_version",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "24 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 4,
+        "updates": 3,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.certifications": {
+      "schema": "portfolio_pro_app",
+      "name": "certifications",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "4680 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 24006,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.content_blocks": {
+      "schema": "portfolio_pro_app",
+      "name": "content_blocks",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "1424 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 6755,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.custom_section_items": {
+      "schema": "portfolio_pro_app",
+      "name": "custom_section_items",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "18 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 96675,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.custom_sections": {
+      "schema": "portfolio_pro_app",
+      "name": "custom_sections",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "5664 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 29967,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.education": {
+      "schema": "portfolio_pro_app",
+      "name": "education",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "6952 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 30000,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.media_gallery": {
+      "schema": "portfolio_pro_app",
+      "name": "media_gallery",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "13 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 49819,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.notifications": {
+      "schema": "portfolio_pro_app",
+      "name": "notifications",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "96 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 33,
+        "updates": 0,
+        "deletes": 4
+      }
+    },
+    "portfolio_pro_app.portfolio_project_associations": {
+      "schema": "portfolio_pro_app",
+      "name": "portfolio_project_associations",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "4472 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 20000,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.portfolio_projects": {
+      "schema": "portfolio_pro_app",
+      "name": "portfolio_projects",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "11 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 40001,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.portfolios": {
+      "schema": "portfolio_pro_app",
+      "name": "portfolios",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "10 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 30000,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.professional_skills": {
+      "schema": "portfolio_pro_app",
+      "name": "professional_skills",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "12 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 80001,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.project_audit_logs": {
+      "schema": "portfolio_pro_app",
+      "name": "project_audit_logs",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "80 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 1,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.project_comments": {
+      "schema": "portfolio_pro_app",
+      "name": "project_comments",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "5688 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 33334,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.project_likes": {
+      "schema": "portfolio_pro_app",
+      "name": "project_likes",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "10 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 90001,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.social_links": {
+      "schema": "portfolio_pro_app",
+      "name": "social_links",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "10 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 60014,
+        "updates": 1,
+        "deletes": 12
+      }
+    },
+    "portfolio_pro_app.suggestion_comments": {
+      "schema": "portfolio_pro_app",
+      "name": "suggestion_comments",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "16 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 0,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.suggestion_votes": {
+      "schema": "portfolio_pro_app",
+      "name": "suggestion_votes",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "16 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 0,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.suggestions": {
+      "schema": "portfolio_pro_app",
+      "name": "suggestions",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "16 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 0,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.tech_professions": {
+      "schema": "portfolio_pro_app",
+      "name": "tech_professions",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "208 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 766,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.testimonials": {
+      "schema": "portfolio_pro_app",
+      "name": "testimonials",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "3312 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 10000,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.universities": {
+      "schema": "portfolio_pro_app",
+      "name": "universities",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "216 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 1945,
+        "updates": 0,
+        "deletes": 738
+      }
+    },
+    "portfolio_pro_app.user_devices": {
+      "schema": "portfolio_pro_app",
+      "name": "user_devices",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "4992 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 31964,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.user_profile": {
+      "schema": "portfolio_pro_app",
+      "name": "user_profile",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "6344 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 20004,
+        "updates": 27,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.user_project_association": {
+      "schema": "portfolio_pro_app",
+      "name": "user_project_association",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "18 MB",
+      "stats": {
+        "reads": 0,
+        "inserts": 79998,
+        "updates": 0,
+        "deletes": 0
+      }
+    },
+    "portfolio_pro_app.user_settings": {
+      "schema": "portfolio_pro_app",
+      "name": "user_settings",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "3568 kB",
+      "stats": {
+        "reads": 0,
+        "inserts": 20006,
+        "updates": 246,
+        "deletes": 4
+      }
+    },
+    "portfolio_pro_app.users": {
+      "schema": "portfolio_pro_app",
+      "name": "users",
+      "type": "BASE TABLE",
+      "comment": null,
+      "size": "10 MB",
+      "stats": {
+        "reads": 17,
+        "inserts": 20006,
+        "updates": 50,
+        "deletes": 4
+      }
+    }
+  },
+  "foreign_keys": [
+    {
+      "child_table": "portfolio_pro_app.certifications",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "certifications_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.content_blocks",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "content_blocks_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.custom_section_items",
+      "child_column": "section_id",
+      "parent_table": "portfolio_pro_app.custom_sections",
+      "parent_column": "id",
+      "constraint_name": "custom_section_items_section_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.custom_sections",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "custom_sections_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.education",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "education_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.media_gallery",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "media_gallery_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.notifications",
+      "child_column": "actor_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "notifications_actor_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.notifications",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "notifications_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.portfolio_project_associations",
+      "child_column": "portfolio_id",
+      "parent_table": "portfolio_pro_app.portfolios",
+      "parent_column": "id",
+      "constraint_name": "portfolio_project_associations_portfolio_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.portfolio_project_associations",
+      "child_column": "project_id",
+      "parent_table": "portfolio_pro_app.portfolio_projects",
+      "parent_column": "id",
+      "constraint_name": "portfolio_project_associations_project_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.portfolios",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "portfolios_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.professional_skills",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "professional_skills_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.project_audit_logs",
+      "child_column": "project_id",
+      "parent_table": "portfolio_pro_app.portfolio_projects",
+      "parent_column": "id",
+      "constraint_name": "project_audit_logs_project_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.project_audit_logs",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "project_audit_logs_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.project_comments",
+      "child_column": "parent_comment_id",
+      "parent_table": "portfolio_pro_app.project_comments",
+      "parent_column": "id",
+      "constraint_name": "project_comments_parent_comment_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.project_comments",
+      "child_column": "project_id",
+      "parent_table": "portfolio_pro_app.portfolio_projects",
+      "parent_column": "id",
+      "constraint_name": "project_comments_project_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.project_comments",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "project_comments_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.project_likes",
+      "child_column": "project_id",
+      "parent_table": "portfolio_pro_app.portfolio_projects",
+      "parent_column": "id",
+      "constraint_name": "project_likes_project_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.project_likes",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "project_likes_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.social_links",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "social_links_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.suggestion_comments",
+      "child_column": "parent_comment_id",
+      "parent_table": "portfolio_pro_app.suggestion_comments",
+      "parent_column": "id",
+      "constraint_name": "suggestion_comments_parent_comment_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.suggestion_comments",
+      "child_column": "suggestion_id",
+      "parent_table": "portfolio_pro_app.suggestions",
+      "parent_column": "id",
+      "constraint_name": "suggestion_comments_suggestion_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.suggestion_comments",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "suggestion_comments_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.suggestion_votes",
+      "child_column": "suggestion_id",
+      "parent_table": "portfolio_pro_app.suggestions",
+      "parent_column": "id",
+      "constraint_name": "suggestion_votes_suggestion_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.suggestion_votes",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "suggestion_votes_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.suggestions",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "suggestions_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.testimonials",
+      "child_column": "author_user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "testimonials_author_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.testimonials",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "testimonials_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.user_devices",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "user_devices_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.user_profile",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "user_profile_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.user_project_association",
+      "child_column": "project_id",
+      "parent_table": "portfolio_pro_app.portfolio_projects",
+      "parent_column": "id",
+      "constraint_name": "user_project_association_project_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.user_project_association",
+      "child_column": "user_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "user_project_association_user_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    },
+    {
+      "child_table": "portfolio_pro_app.user_settings",
+      "child_column": "owner_id",
+      "parent_table": "portfolio_pro_app.users",
+      "parent_column": "id",
+      "constraint_name": "user_settings_owner_id_fkey",
+      "update_rule": "NO ACTION",
+      "delete_rule": "NO ACTION"
+    }
+  ],
+  "indexes": [],
+  "table_sizes": {},
+  "health_checks": []
+}

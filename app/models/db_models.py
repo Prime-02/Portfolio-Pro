@@ -35,6 +35,7 @@ class User(Base):  # Done
     middlename = Column(String, index=True, nullable=True)
     lastname = Column(String, index=True, nullable=True)
     profile_picture = Column(String, nullable=True)
+    profile_picture_id = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     is_active = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
@@ -120,6 +121,8 @@ class User(Base):  # Done
         is_visible: bool = True,
         role: str = "user",
         id: Optional[uuid.UUID] = None,
+        profile_picture: Optional[str] = None,
+        profile_picture_id: Optional[str] = None,
     ):
         self.email = email
         self.auth_id = auth_id
@@ -132,6 +135,8 @@ class User(Base):  # Done
         self.is_superuser = is_superuser
         self.is_visible = is_visible
         self.role = role
+        self.profile_picture = profile_picture
+        self.profile_picture_id = profile_picture_id    
         self.id = id if id else uuid.uuid4()
 
     def __repr__(self):
